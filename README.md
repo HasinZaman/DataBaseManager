@@ -33,7 +33,7 @@ This input system also is excessive for short SQL commands. For instance, an imp
 ## UI
 | ![Database UI State Diagram](desgin_documentation//DBM_State_Diagram.svg "Database UI State Diagram") |
 |:--:|
-| fg.1 Database Manager State Diagram |
+| Fig.1.1 Database Manager UI State Diagram |
 
 ## Testing
 
@@ -42,17 +42,17 @@ In order to better understand the capabilities of the new database manager tool.
 ### Current Database
 | ![Current Database Entity Diagram](desgin_documentation/old/ER_Diagram.svg) |
 |:--:|
-| fg.2.1 Current Database Entity Diagram |
+| Fig.2.1 Current Database Entity Diagram |
 
 | ![Current Database Schema Diagram](desgin_documentation/old/Schema_Diagram.svg) |
 |:--:|
-| fg.2.2 Current Database Schema Diagram |
+| Fig.2.2 Current Database Schema Diagram |
 
 ### New Database
 | ![New Proposed Database Entity Diagram](desgin_documentation//DB_Entity_Diagram.svg) |
 |:--:|
-| fg.3.1 New Proposed Database Entity Diagram |
+| Fig.3.1 New Proposed Database Entity Diagram |
 
 | ![New Proposed Database Entity Diagram](desgin_documentation//DB_Schema_Diagram.svg) |
 |:--:|
-| fg.3.2 New Proposed Database Schema Diagram |
+| Fig.3.2 New Proposed Database Schema Diagram |
