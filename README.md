@@ -30,13 +30,33 @@ However, this input system breaks down as longer and more complicated commands. 
 
 This input system also is excessive for short SQL commands. For instance, an impromptu "SELECT * FROM Relation" call - takes too long to execute. As the command needs to be put in a text file, saved, then opened by the database tool and then executed. The process can be sped up - if the database tool can receive SQL commands in the command prompt on run time.
 
-## Design Documents
-### Database Structure
-| ![Database Entity Diagram](desgin_documentation//DB_Entity_Diagram.svg "Database Entity Diagram") |
+## Database Structure
+### Current Database
+| ![Current Database Entity Diagram](desgin_documentation/old/ER_Diagram.svg) |
 |:--:|
-| Database Entity Diagram |
+| fg.1.1 Current Database Entity Diagram |
+
+| ![Current Database Schema Diagram](desgin_documentation/old/Schema_Diagram.svg) |
+|:--:|
+| fg.1.2 Current Database Schema Diagram |
+
+### New Database
+| ![New Proposed Database Entity Diagram](desgin_documentation//DB_Entity_Diagram.svg) |
+|:--:|
+| fg.2.1 New Proposed Database Entity Diagram |
+
+| ![New Proposed Database Entity Diagram](desgin_documentation//DB_Schema_Diagram.svg) |
+|:--:|
+| fg.2.2 New Proposed Database Schema Diagram |
+
+### Reasoning
 
  1. Tag
+
+The "Tag" entity is not a new relation. As the 
+
+`CREATE TABLE tag (id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id))`
+
  2. Related
  3. Project
  4. Dev Log
