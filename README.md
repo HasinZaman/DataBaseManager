@@ -16,7 +16,7 @@ Rather than fully destroying and reconstructing the database - the new database 
 
  2. Hard to View Database State
 
-The current database tool cannot view the state of the Database. As a result, it is required to use a slow online database tool(MyPHPAdmin) provided by the database provider. Since the current database is structured to be similar to a graph of tags. It is quite difficult to see the relationship between tags. This is why the new database should provide a couple of viewing options to better conceptualize the database.
+The current database tool cannot view the state of the Database. As a result, it is required to use a slow online database tool(MyPHPAdmin) provided by the database provider. Since the current database is structured to be similar to a graph of tags. It is quite difficult to see the relationship between tags in a relational database. This is why the new database should provide a couple of viewing options to better conceptualize the database.
 
 Firstly, the new tool should be able to easily show the relationship between schema. For instance, the colour highlighting of primary and foreign keys.
 
