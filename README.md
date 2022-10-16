@@ -1,10 +1,10 @@
 # Database Manager
 
-## Summary
+## Purpose
 
 The Database Manager repo is an internal tool to better manage the state of projects, skills and dev-logs on [HasinZaman.link](http://hasinzaman.link).
 
-Before the creation of this tool - the database would be updated in a inefficient and slow process. In which, a script would delete the entire DB. Followed by executing a series of SQL commands to generate a new DB. However, this process has a couple flaws. 
+Before the creation of this tool - the database tool in use has become inefficient, slow process and increasingly obtuse to use. The main issues can be categorized into three groups:
 
  1. Excessive Operations
 
