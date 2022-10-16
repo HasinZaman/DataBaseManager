@@ -30,7 +30,15 @@ However, this input system breaks down as longer and more complicated commands. 
 
 This input system also is excessive for short SQL commands. For instance, an impromptu "SELECT * FROM Relation" call - takes too long to execute. As the command needs to be put in a text file, saved, then opened by the database tool and then executed. The process can be sped up - if the database tool can receive SQL commands in the command prompt on run time.
 
-## Database Structure
+### UI
+| ![Database UI State Diagram](desgin_documentation//DBM_State_Diagram.svg "Database UI State Diagram") |
+|:--:|
+| Database Manager State Diagram |
+
+## Testing
+
+In order to better understand the capabilities of the new database manager tool. It will be tested in a couple of ways. Firstly, the the current schema will be updated to a newer schema using the new database manager. Secondly, new tuples would be added to each relation to using numerous different input methods (input attr from raw text from console, input attr from file from console, input command from file). Finally, tests will be done on the speed and usability of saving and resetting the database to a snapshot.
+
 ### Current Database
 | ![Current Database Entity Diagram](desgin_documentation/old/ER_Diagram.svg) |
 |:--:|
@@ -48,19 +56,3 @@ This input system also is excessive for short SQL commands. For instance, an imp
 | ![New Proposed Database Entity Diagram](desgin_documentation//DB_Schema_Diagram.svg) |
 |:--:|
 | fg.2.2 New Proposed Database Schema Diagram |
-
-### Reasoning
-
- 1. Tag
-
-The "Tag" entity is not a new relation. As the 
-
-`CREATE TABLE tag (id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id))`
-
- 2. Related
- 3. Project
- 4. Dev Log
-### UI
-| ![Database UI State Diagram](desgin_documentation//DBM_State_Diagram.svg "Database UI State Diagram") |
-|:--:|
-| Database Manager State Diagram |
