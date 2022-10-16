@@ -30,7 +30,7 @@ However, this input system breaks down as longer and more complicated commands. 
 
 This input system also is excessive for short SQL commands. For instance, an impromptu "SELECT * FROM Relation" call - takes too long to execute. As the command needs to be put in a text file, saved, then opened by the database tool and then executed. The process can be sped up - if the database tool can receive SQL commands in the command prompt on run time.
 
-### UI
+## UI
 | ![Database UI State Diagram](desgin_documentation//DBM_State_Diagram.svg "Database UI State Diagram") |
 |:--:|
 | Database Manager State Diagram |
