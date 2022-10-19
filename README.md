@@ -31,7 +31,7 @@ However, this input system breaks down as longer and more complicated commands. 
 This input system also is excessive for short SQL commands. For instance, an impromptu "SELECT * FROM Relation" call - takes too long to execute. As the command needs to be put in a text file, saved, then opened by the database tool and then executed. The process can be sped up - if the database tool can receive SQL commands in the command prompt on run time.
 
 ## UI
-| ![Database UI State Diagram](desgin_documentation//DBM_State_Diagram.svg "Database UI State Diagram") |
+| ![Database UI State Diagram](design_documentation/DB/new/DBM_State_Diagram.svg "Database UI State Diagram") |
 |:--:|
 | Fig.1.1 Database Manager UI State Diagram |
 
@@ -40,19 +40,19 @@ This input system also is excessive for short SQL commands. For instance, an imp
 In order to better understand the capabilities of the new database manager tool. It will be tested in a couple of ways. Firstly, the the current schema will be updated to a newer schema using the new database manager. Secondly, new tuples would be added to each relation to using numerous different input methods (input attr from raw text from console, input attr from file from console, input command from file). Finally, tests will be done on the speed and usability of saving and resetting the database to a snapshot.
 
 ### Current Database
-| ![Current Database Entity Diagram](desgin_documentation/old/ER_Diagram.svg) |
+| ![Current Database Entity Diagram](design_documentation/DB/old/ER_Diagram.svg) |
 |:--:|
 | Fig.2.1 Current Database Entity Diagram |
 
-| ![Current Database Schema Diagram](desgin_documentation/old/Schema_Diagram.svg) |
+| ![Current Database Schema Diagram](design_documentation/DB/old/Schema_Diagram.svg) |
 |:--:|
 | Fig.2.2 Current Database Schema Diagram |
 
 ### New Database
-| ![New Proposed Database Entity Diagram](desgin_documentation//DB_Entity_Diagram.svg) |
+| ![New Proposed Database Entity Diagram](design_documentation/DB/new/DB_Entity_Diagram.svg) |
 |:--:|
 | Fig.3.1 New Proposed Database Entity Diagram |
 
-| ![New Proposed Database Entity Diagram](desgin_documentation//DB_Schema_Diagram.svg) |
+| ![New Proposed Database Schema Diagram](design_documentation/DB/new/DB_Schema_Diagram.svg) |
 |:--:|
 | Fig.3.2 New Proposed Database Schema Diagram |
