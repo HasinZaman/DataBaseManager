@@ -31,79 +31,79 @@ However, this input system breaks down as longer and more complicated commands. 
 This input system also is excessive for short SQL commands. For instance, an impromptu "SELECT * FROM Relation" call - takes too long to execute. As the command needs to be put in a text file, saved, then opened by the database tool and then executed. The process can be sped up - if the database tool can receive SQL commands in the command prompt on run time.
 
 ## UI
-| ![Database UI State Diagram](design_documentation/DB/new/DBM_State_Diagram.svg "Database UI State Diagram") |
+| ![Database UI State Diagram](design_documentation//DB//new//DBM_State_Diagram.svg "Database UI State Diagram") |
 |:--:|
 | Fig.1.1 Database Manager UI State Diagram |
 
 ### Schema UI Concept
-| ![Schema UI 1](design_documentation/UI/Schema_1.png) |
+| ![Schema UI 1](design_documentation//UI//Schema_1.png) |
 |:--:|
 | Fig.1.2.1 Schema UI |
 
-| ![Schema UI 2](design_documentation/UI/Schema_2.png) |
+| ![Schema UI 2](design_documentation//UI//Schema_2.png) |
 |:--:|
 | Fig.1.2.2 Schema UI |
 
-| ![Schema UI 3](design_documentation/UI/Schema_3.png) |
+| ![Schema UI 3](design_documentation//UI//Schema_3.png) |
 |:--:|
 | Fig.1.2.3 Schema UI |
 
-| ![Schema UI 4](design_documentation/UI/Schema_4.png) |
+| ![Schema UI 4](design_documentation//UI//Schema_4.png) |
 |:--:|
 | Fig.1.2.4 Schema UI |
 
-| ![Schema UI 5](design_documentation/UI/Schema_5.png) |
+| ![Schema UI 5](design_documentation//UI//Schema_5.png) |
 |:--:|
 | Fig.1.2.5 Schema UI |
 
-| ![Schema UI 6](design_documentation/UI/Schema_6.png) |
+| ![Schema UI 6](design_documentation//UI//Schema_6.png) |
 |:--:|
 | Fig.1.2.6 Schema UI |
 
-| ![Schema UI 7](design_documentation/UI/Schema_7.png) |
+| ![Schema UI 7](design_documentation//UI//Schema_7.png) |
 |:--:|
 | Fig.1.2.7 Schema UI |
 
-| ![Schema UI 8](design_documentation/UI/Schema_8.png) |
+| ![Schema UI 8](design_documentation//UI//Schema_8.png) |
 |:--:|
 | Fig.1.2.8 Schema UI |
 
-| ![Schema UI 9](design_documentation/UI/Schema_9.png) |
+| ![Schema UI 9](design_documentation//UI//Schema_9.png) |
 |:--:|
 | Fig.1.2.9 Schema UI |
 
 ### Relation UI Concept
-| ![Relation UI 1](design_documentation/UI/Relation_1.png) |
+| ![Relation UI 1](design_documentation//UI//Relation_1.png) |
 |:--:|
 | Fig.1.3.1 Relation UI |
 
-| ![Relation UI 2](design_documentation/UI/Relation_2.png) |
+| ![Relation UI 2](design_documentation//UI//Relation_2.png) |
 |:--:|
 | Fig.1.3.2 Relation UI |
 
-| ![Relation UI 3](design_documentation/UI/Relation_3.png) |
+| ![Relation UI 3](design_documentation//UI//Relation_3.png) |
 |:--:|
 | Fig.1.3.3 Relation UI |
 
 
 ### Snapshot UI Concept
-| ![Snapshot UI 1](design_documentation/UI/SnapShot_1.png) |
+| ![Snapshot UI 1](design_documentation//UI//SnapShot_1.png) |
 |:--:|
 | Fig.1.4.1 Snapshot UI |
 
-| ![Snapshot UI 2](design_documentation/UI/SnapShot_2.png) |
+| ![Snapshot UI 2](design_documentation//UI//SnapShot_2.png) |
 |:--:|
 | Fig.1.4.2 Snapshot UI |
 
-| ![Snapshot UI 3](design_documentation/UI/SnapShot_3.png) |
+| ![Snapshot UI 3](design_documentation//UI//SnapShot_3.png) |
 |:--:|
 | Fig.1.4.3 Snapshot UI |
 
-| ![Snapshot UI 4](design_documentation/UI/SnapShot_4.png) |
+| ![Snapshot UI 4](design_documentation//UI//SnapShot_4.png) |
 |:--:|
 | Fig.1.4.4 Snapshot UI |
 
-| ![Snapshot UI 5](design_documentation/UI/SnapShot_5.png) |
+| ![Snapshot UI 5](design_documentation//UI//SnapShot_5.png) |
 |:--:|
 | Fig.1.4.5 Snapshot UI |
 
@@ -112,19 +112,19 @@ This input system also is excessive for short SQL commands. For instance, an imp
 In order to better understand the capabilities of the new database manager tool. It will be tested in a couple of ways. Firstly, the the current schema will be updated to a newer schema using the new database manager. Secondly, new tuples would be added to each relation to using numerous different input methods (input attr from raw text from console, input attr from file from console, input command from file). Finally, tests will be done on the speed and usability of saving and resetting the database to a snapshot.
 
 ### Current Database
-| ![Current Database Entity Diagram](design_documentation/DB/old/ER_Diagram.svg) |
+| ![Current Database Entity Diagram](design_documentation//DB//old//ER_Diagram.svg) |
 |:--:|
 | Fig.2.1 Current Database Entity Diagram |
 
-| ![Current Database Schema Diagram](design_documentation/DB/old/Schema_Diagram.svg) |
+| ![Current Database Schema Diagram](design_documentation//DB//old//Schema_Diagram.svg) |
 |:--:|
 | Fig.2.2 Current Database Schema Diagram |
 
 ### New Database
-| ![New Proposed Database Entity Diagram](design_documentation/DB/new/DB_Entity_Diagram.svg) |
+| ![New Proposed Database Entity Diagram](design_documentation//DB//new//DB_Entity_Diagram.svg) |
 |:--:|
 | Fig.3.1 New Proposed Database Entity Diagram |
 
-| ![New Proposed Database Schema Diagram](design_documentation/DB/new/DB_Schema_Diagram.svg) |
+| ![New Proposed Database Schema Diagram](design_documentation//DB//new//DB_Schema_Diagram.svg) |
 |:--:|
 | Fig.3.2 New Proposed Database Schema Diagram |
