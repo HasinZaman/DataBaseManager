@@ -35,6 +35,78 @@ This input system also is excessive for short SQL commands. For instance, an imp
 |:--:|
 | Fig.1.1 Database Manager UI State Diagram |
 
+### Schema UI Concept
+| ![Schema UI 1](design_documentation/UI/Schema_1.png) |
+|:--:|
+| Fig.1.2.1 Schema UI |
+
+| ![Schema UI 2](design_documentation/UI/Schema_2.png) |
+|:--:|
+| Fig.1.2.2 Schema UI |
+
+| ![Schema UI 3](design_documentation/UI/Schema_3.png) |
+|:--:|
+| Fig.1.2.3 Schema UI |
+
+| ![Schema UI 4](design_documentation/UI/Schema_4.png) |
+|:--:|
+| Fig.1.2.4 Schema UI |
+
+| ![Schema UI 5](design_documentation/UI/Schema_5.png) |
+|:--:|
+| Fig.1.2.5 Schema UI |
+
+| ![Schema UI 6](design_documentation/UI/Schema_6.png) |
+|:--:|
+| Fig.1.2.6 Schema UI |
+
+| ![Schema UI 7](design_documentation/UI/Schema_7.png) |
+|:--:|
+| Fig.1.2.7 Schema UI |
+
+| ![Schema UI 8](design_documentation/UI/Schema_8.png) |
+|:--:|
+| Fig.1.2.8 Schema UI |
+
+| ![Schema UI 9](design_documentation/UI/Schema_9.png) |
+|:--:|
+| Fig.1.2.9 Schema UI |
+
+### Relation UI Concept
+| ![Relation UI 1](design_documentation/UI/Relation_1.png) |
+|:--:|
+| Fig.1.3.1 Relation UI |
+
+| ![Relation UI 2](design_documentation/UI/Relation_2.png) |
+|:--:|
+| Fig.1.3.2 Relation UI |
+
+| ![Relation UI 3](design_documentation/UI/Relation_3.png) |
+|:--:|
+| Fig.1.3.3 Relation UI |
+
+
+### Snapshot UI Concept
+| ![Snapshot UI 1](design_documentation/UI/SnapShot_1.png) |
+|:--:|
+| Fig.1.4.1 Snapshot UI |
+
+| ![Snapshot UI 2](design_documentation/UI/SnapShot_2.png) |
+|:--:|
+| Fig.1.4.2 Snapshot UI |
+
+| ![Snapshot UI 3](design_documentation/UI/SnapShot_3.png) |
+|:--:|
+| Fig.1.4.3 Snapshot UI |
+
+| ![Snapshot UI 4](design_documentation/UI/SnapShot_4.png) |
+|:--:|
+| Fig.1.4.4 Snapshot UI |
+
+| ![Snapshot UI 5](design_documentation/UI/SnapShot_5.png) |
+|:--:|
+| Fig.1.4.5 Snapshot UI |
+
 ## Testing
 
 In order to better understand the capabilities of the new database manager tool. It will be tested in a couple of ways. Firstly, the the current schema will be updated to a newer schema using the new database manager. Secondly, new tuples would be added to each relation to using numerous different input methods (input attr from raw text from console, input attr from file from console, input command from file). Finally, tests will be done on the speed and usability of saving and resetting the database to a snapshot.
