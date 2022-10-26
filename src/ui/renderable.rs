@@ -1,5 +1,5 @@
-use tui::{Frame, backend::Backend};
+use tui::widgets::Widget;
 
-pub trait Renderable<B> where B: Backend {
-    fn render<'a>(frame: &mut Frame<B>)  where B: 'a;
+pub trait Renderable {
+    fn render(&self) -> Vec<Box<dyn Widget>>;
 }

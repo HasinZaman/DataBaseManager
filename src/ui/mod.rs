@@ -1,2 +1,2 @@
-pub mod tab;
 pub mod renderable;
+pub mod tab;
