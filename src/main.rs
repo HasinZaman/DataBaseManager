@@ -1,9 +1,6 @@
 use std::{io, thread, time::Duration};
 use tui::{
-    backend::CrosstermBackend,
-    Terminal,
     widgets::{Block, Borders, BorderType},
-    text::Span,
     style::{Color, Style},
     layout::{Rect, Layout, Direction, Constraint}
 };
@@ -11,24 +8,13 @@ use tui::{
 use crossterm::{
     execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}
 };
-use ui::{menu::{self, Menu}, renderable::Renderable};
+use ui::{menu::Menu, renderable::Renderable, gen_terminal};
 
 pub mod ui;
 
 fn main() {
-    let mut stdout = io::stdout();
 
-    let _result = execute!(stdout, EnterAlternateScreen);
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal;
-    
-    match Terminal::new(backend){
-        Ok(val) => {
-            terminal = val
-        }
-        Err(err) => panic!("{}", err)
-    }
+    let mut terminal = gen_terminal();
     
     let _result = terminal.draw(|f| {
         let size = f.size();
@@ -47,7 +33,7 @@ fn main() {
 
         let mut _menu = Menu::default();
 
-        _menu.render(chunks.get(0).unwrap().clone(), f);
+       _menu.render(chunks.get(0).unwrap().clone(), f);
 
         f.render_widget(block, chunks.get(1).unwrap().clone());
     });
