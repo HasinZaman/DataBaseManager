@@ -1,12 +1,17 @@
 use std::{io, thread, time::Duration};
 use tui::{
     backend::CrosstermBackend,
-    Terminal, widgets::{Block, Borders, BorderType}, text::Span, style::{Color, Style}, layout::Rect
+    Terminal,
+    widgets::{Block, Borders, BorderType},
+    text::Span,
+    style::{Color, Style},
+    layout::{Rect, Layout, Direction, Constraint}
 };
 
 use crossterm::{
     execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}
 };
+use ui::{menu::{self, Menu}, renderable::Renderable};
 
 pub mod ui;
 
@@ -24,7 +29,7 @@ fn main() {
         }
         Err(err) => panic!("{}", err)
     }
-
+    
     let _result = terminal.draw(|f| {
         let size = f.size();
         let block = Block::default()        
@@ -33,21 +38,24 @@ fn main() {
             .border_style(Style::default().fg(Color::White))
             .border_type(BorderType::Rounded)
             .style(Style::default().bg(Color::Black));
-        f.render_widget(block, size);
+        //f.render_widget(block, size);
 
-        let size = Rect::new(
-            size.x,
-            size.y,
-            size.width/2,
-            size.height/2
-        );
-        let block = Block::default()        
-            .title("Block")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::White))
-            .border_type(BorderType::Rounded)
-            .style(Style::default().bg(Color::Black));
-        f.render_widget(block, size);
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+            .split(size);
+
+        let mut menu = Menu::default();
+        menu.next();
+        menu.next();
+        menu.next();
+        menu.prev();
+        menu.select(0);
+
+        menu.render(chunks.get(0).unwrap().clone(), f);
+
+        f.render_widget(block, chunks.get(1).unwrap().clone());
     });
     
     thread::sleep(Duration::from_millis(5000));
