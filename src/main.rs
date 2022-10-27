@@ -38,22 +38,16 @@ fn main() {
             .border_style(Style::default().fg(Color::White))
             .border_type(BorderType::Rounded)
             .style(Style::default().bg(Color::Black));
-        //f.render_widget(block, size);
 
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+            .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)].as_ref())
             .split(size);
 
-        let mut menu = Menu::default();
-        menu.next();
-        menu.next();
-        menu.next();
-        menu.prev();
-        menu.select(0);
+        let mut _menu = Menu::default();
 
-        menu.render(chunks.get(0).unwrap().clone(), f);
+        _menu.render(chunks.get(0).unwrap().clone(), f);
 
         f.render_widget(block, chunks.get(1).unwrap().clone());
     });
