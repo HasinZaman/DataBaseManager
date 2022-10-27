@@ -114,8 +114,7 @@ impl Renderable for Menu {
                         .title("Tabs")
                         .borders(Borders::ALL)
                     )
-                .divider(DOT)
-                .select(self.selected),
+                .divider(DOT),
             display_area
         );
     }
