@@ -5,6 +5,7 @@ use tui::{Terminal, backend::CrosstermBackend};
 
 pub mod renderable;
 pub mod menu;
+pub mod input;
 
 pub fn gen_terminal() -> Terminal<CrosstermBackend<Stdout>> {
     let mut stdout = io::stdout();
