@@ -1,12 +1,12 @@
-use std::{io, thread, time::Duration};
+use std::{thread, time::Duration};
 use tui::{
-    widgets::{Block, Borders, BorderType},
+    widgets::{Block, Borders},
     style::{Color, Style},
-    layout::{Rect, Layout, Direction, Constraint}
+    layout::{Layout, Direction, Constraint}
 };
 
 use crossterm::{
-    execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}
+    execute, terminal::{LeaveAlternateScreen}
 };
 use ui::{menu::Menu, renderable::Renderable, gen_terminal, input::Input};
 
@@ -15,13 +15,13 @@ pub mod ui;
 fn main() {
 
     let mut terminal = gen_terminal();
-    terminal.show_cursor();
+    let _result= terminal.show_cursor();
 
     let str_tmp = "HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD".to_string();
     
     let mut input = Input::from(
         "".to_string(),
-        Some("Hello World".to_string()),
+        None,
         true
     );
 
@@ -52,7 +52,7 @@ fn main() {
         
         thread::sleep(Duration::from_millis(50));
     }
-    for x in 0..str_tmp.len()/2{
+    for _x in 0..str_tmp.len()/2{
         let _result = terminal.draw(|f| {
             let size = f.size();
             let block = Block::default()        
@@ -78,7 +78,7 @@ fn main() {
         
         thread::sleep(Duration::from_millis(50));
     }
-    for x in 0..str_tmp.len()/2{
+    for _x in 0..str_tmp.len()/2{
         let _result = terminal.draw(|f| {
             let size = f.size();
             let block = Block::default()        
