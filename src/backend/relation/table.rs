@@ -16,6 +16,7 @@ pub enum Constraint{
         table_name: String,
         attribute_name: String
     },
+    AutoIncrement,
 }
 pub enum AttributeType{
     //string data types
