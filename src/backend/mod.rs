@@ -1,2 +1,2 @@
-mod relation;
-mod query;
+pub mod relation;
+pub mod query;
