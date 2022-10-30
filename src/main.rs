@@ -11,6 +11,7 @@ use crossterm::{
 use ui::{menu::Menu, renderable::Renderable, gen_terminal, input::Input};
 
 pub mod ui;
+pub mod backend;
 
 fn main() {
 
