@@ -1,4 +1,4 @@
-
+#[derive(Clone)]
 pub enum Query {
     Select(String),
     Insert(String),
