@@ -1,3 +1,3 @@
-mod relations;
-mod schema;
-mod snapshot;
+pub mod relations;
+pub mod schema;
+pub mod snapshot;
