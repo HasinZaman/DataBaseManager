@@ -1,14 +1,19 @@
+#[derive(Clone)]
 pub struct Table{
-    name: String,
-    attributes: Vec<Attribute>,
-    primary_id: Option<usize>,
+    pub name: String,
+    pub attributes: Vec<Attribute>,
+    pub primary_key: Option<usize>,
 }
 
+#[derive(Clone)]
 pub struct Attribute{
-    name: String,
-    data_type: AttributeType,
-    constraint: Vec<Constraint>
+    pub name: String,
+    pub data_type: AttributeType,
+    pub constraint: Vec<Constraint>
 }
+
+
+#[derive(Clone)]
 pub enum Constraint{
     NotNull,
     Unique,
@@ -18,6 +23,8 @@ pub enum Constraint{
     },
     AutoIncrement,
 }
+
+#[derive(Clone)]
 pub enum AttributeType{
     //string data types
     Char(u8),
