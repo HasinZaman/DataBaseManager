@@ -108,7 +108,7 @@ impl Renderable for RelationListPage{
                                                         |(index,a)| {
                                                             Span::styled(
                                                                 a.to_string(),
-                                                                match (table.primary_key) {
+                                                                match table.primary_key {
                                                                     //apply primary key style
                                                                     Some(primary_key) => {
                                                                         if primary_key == index {
