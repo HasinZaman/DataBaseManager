@@ -1,17 +1,20 @@
-use std::fmt;
+use std::{fmt, collections::HashSet};
+use core::hash::Hash;
 
-#[derive(Clone)]
+/// Table struct defines the structure of a relation table
+#[derive(Clone, Debug)]
 pub struct Table{
     pub name: String,
     pub attributes: Vec<Attribute>,
     pub primary_key: Option<usize>,
 }
 
-#[derive(Clone)]
+/// Attribute defines the columns of a Table
+#[derive(Clone, Debug)]
 pub struct Attribute{
     pub name: String,
     pub data_type: AttributeType,
-    pub constraint: Vec<Constraint>
+    pub constraint: HashSet<Constraint>
 }
 
 impl fmt::Display for Attribute {
@@ -20,7 +23,8 @@ impl fmt::Display for Attribute {
     }
 }
 
-#[derive(Clone)]
+/// Constraint defines the restrictions of an attribute
+#[derive(Clone, Hash, Eq, Debug)]
 pub enum Constraint{
     NotNull,
     Unique,
@@ -30,8 +34,21 @@ pub enum Constraint{
     },
     AutoIncrement,
 }
+impl PartialEq for Constraint {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            // (
+            //     Self::ForeignKey { .. },
+            //     Self::ForeignKey { .. }
+            // ) => true,
+            
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
 
-#[derive(Clone)]
+/// AttributeType defines every type of MySQL datatype
+#[derive(Clone, Debug)]
 pub enum AttributeType{
     //string data types
     Char(u8),
@@ -84,8 +101,8 @@ impl fmt::Display for AttributeType{
             AttributeType::MediumBlob => write!(f, "mediumblob"),
             AttributeType::LongText => write!(f, "longtext"),
             AttributeType::LongBlob => write!(f, "longblob"),
-            AttributeType::Enum{val} => panic!(),
-            AttributeType::Set{val} => todo!(),
+            AttributeType::Enum{..} => panic!(),
+            AttributeType::Set{..} => todo!(),
 
             //numeric data types
             AttributeType::Bit(val) => write!(f, "bit({})", val),
