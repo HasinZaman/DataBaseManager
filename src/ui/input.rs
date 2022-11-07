@@ -4,11 +4,13 @@ use tui::{widgets::{Block, Borders, Paragraph}, text::Spans};
 
 use super::renderable::Renderable;
 
+/// InputErr defines all the possible error from the Input widget
 #[derive(Debug)]
 pub enum InputErr{
     InvalidCursorIndex
 }
 
+/// Input struct defines the state required to maintain a text input section
 #[derive(Debug)]
 pub struct Input{
     content: Vec<char>,
@@ -18,6 +20,7 @@ pub struct Input{
 }
 
 impl Input {
+    /// new associative function generates Input struct
     pub fn new(content: Vec<char>, prompt: Option<String>, cursor: usize, input_cond: bool) -> Result<Input, InputErr>{
         Result::Ok(
             Input{
@@ -34,6 +37,7 @@ impl Input {
         )
     }
 
+    /// from associative function generates Input struct from String
     pub fn from(content: String, prompt: Option<String>, input_cond: bool) -> Input {
         Input {
             content: content.chars().collect(),
@@ -43,6 +47,7 @@ impl Input {
         }
     }
 
+    /// clear method empties input
     pub fn clear(&mut self) -> &mut Self{
         if self.input_cond  {
             self.content.clear();
@@ -51,6 +56,7 @@ impl Input {
         self
     }
 
+    /// cursor_left method moves the cursor to the left by step
     pub fn cursor_left(&mut self, step: usize) -> &mut Self{
         if self.input_cond {
             match self.cursor.checked_sub(step) {
@@ -61,6 +67,8 @@ impl Input {
         
         self
     }
+
+    /// cursor_right method moves the cursor to the right by step
     pub fn cursor_right(&mut self, step: usize) -> &mut Self{
         if self.input_cond {
             self.cursor = min(self.content.len(), self.cursor + step);
@@ -68,10 +76,13 @@ impl Input {
 
         self
     }
+
+    /// cursor method returns cursor position
     pub fn cursor(&self)  -> usize {
         self.cursor
     }
 
+    /// add_char method adds char left of the cursor
     pub fn add_char(&mut self, c: char) -> &mut Self {
         if self.input_cond {
             self.content.insert(self.cursor, c);
@@ -80,6 +91,7 @@ impl Input {
         self
     }
 
+    /// del_char method removes char left of the cursor
     pub fn del_char(&mut self) -> &mut Self {
         if self.input_cond {
             if let Some(target) = self.cursor.checked_sub(1) {
