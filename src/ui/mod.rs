@@ -8,6 +8,7 @@ pub mod menu;
 pub mod input;
 pub mod pages;
 
+/// gen_terminal method initializes console window
 pub fn gen_terminal() -> Terminal<CrosstermBackend<Stdout>> {
     let mut stdout = io::stdout();
 
