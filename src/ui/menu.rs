@@ -8,20 +8,12 @@ use tui::{
 };
 use std::fmt;
 
-#[derive(Clone, Copy)]
-#[derive(Debug, EnumCountMacro, EnumIter)]
+/// Tab enum define all tab types
+#[derive(Clone, Copy, Debug, EnumCountMacro, EnumIter)]
 pub enum Tab {
     Schema,
     Relation,
     SnapShot
-}
-
-impl Tab{
-}
-impl Default for Tab {
-    fn default() -> Tab {
-        Tab::Schema
-    }
 }
 impl fmt::Display for Tab {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -33,12 +25,14 @@ impl fmt::Display for Tab {
     }
 }
 
+/// Menu struct defines state required to maintain a menu widget
 pub struct Menu {
     tabs: [Tab;3],
     selected: usize,
 }
 
 impl Menu {
+    /// new associative function generates menu - with selected tab
     pub fn new(selected: usize) -> Menu {
         if Tab::COUNT <= selected {
             panic!("selected must be between [0,{})", Tab::COUNT);
@@ -54,6 +48,7 @@ impl Menu {
         }
     }
 
+    /// next method moves selected tab to the left
     pub fn next(&mut self) -> &Tab {
 
         self.selected= (self.selected+1) % Tab::COUNT;
@@ -61,6 +56,7 @@ impl Menu {
         &self.tabs[self.selected]
     }
     
+    /// prev method moves selected tab to the right
     pub fn prev(&mut self) -> &Tab {
         self.selected = match self.selected {
             0 => Tab::COUNT - 1,
@@ -70,6 +66,7 @@ impl Menu {
         &self.tabs[self.selected]
     }
 
+    /// select method changes selected tab to the inputted select index
     pub fn select(&mut self, select: usize) -> Option<&Tab> {
         if Tab::COUNT <= select {
             return Option::None
