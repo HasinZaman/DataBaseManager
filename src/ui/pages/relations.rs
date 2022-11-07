@@ -2,32 +2,35 @@ use std::{collections::HashMap, u8, cmp::max};
 
 use tui::{
     Frame,
-    style::{Color, Style, Modifier},
+    style::{Color, Style},
     widgets::{Table, Row, Cell, Block, Borders},
     backend::CrosstermBackend,
     layout::{Rect, Constraint}, text::{Spans, Span}
 };
 
-use rand::prelude::*;
-
-use crate::{ui::renderable::Renderable, backend::{query::Query}};
+use crate::{ui::{renderable::Renderable}, backend::{query::Query, relation::table}};
 use crate::backend::relation::Relation;
 
+/// rand_col function returns a random colour
 fn rand_col() -> Color {
+    let range = 2;
     Color::Rgb(
-        rand::random::<u8>() / 2,
-        rand::random::<u8>() / 2,
-        rand::random::<u8>() / 2,
+        rand::random::<u8>() / range + 255 / range,
+        rand::random::<u8>() / range + 255 / range,
+        rand::random::<u8>() / range + 255 / range,
     )
 }
 
+/// RelationListPage struct defines the states required in-order to maintain a Relation List Page on the relation tab
+#[derive(Debug)]
 pub struct RelationListPage{
     relations: Vec<Relation>,
-    col_map: HashMap<String, Color>
+    col_map: HashMap<(String, String), Color>
 
 }
 
 impl RelationListPage {
+    /// from associative function defines RelationListPage from a vector of Relations
     pub fn from(relations: Vec<Relation>) -> RelationListPage {
         let mut col_map = HashMap::new();
 
@@ -41,14 +44,14 @@ impl RelationListPage {
                                 None => false
                             }
                         },
-                        Relation::View(query)=> {
+                        Relation::View(_query)=> {
                             return false;
-                            match query{
+                            /*match query{
                                 Query::Select(cmd) => {
                                     todo!()
                                 },
                                 _ => false,
-                            }
+                            }*/
                         },
                     }
                 }
@@ -57,7 +60,10 @@ impl RelationListPage {
                     match relation {
                         Relation::Table(table) => {
                             col_map.insert(
-                                table.attributes.get(table.primary_key.unwrap()).unwrap().name.clone(),
+                                (
+                                    table.name.clone(),
+                                    table.attributes.get(table.primary_key.unwrap()).unwrap().name.clone()
+                                ),
                                 rand_col()
                             );
                         },
@@ -74,15 +80,16 @@ impl RelationListPage {
     
 }
 
-
 impl Renderable for RelationListPage{
     fn render<T: std::io::Write>(&self, display_area: Rect, frame: &mut Frame<CrosstermBackend<T>>) {
         let mut column_length : (u16, u16, u16) = (5, "Name".len() as u16, "Definition".len() as u16);
 
+        //define rows of table
         let rows: Vec<Row> = self.relations.iter()
             .map(|r| {
                     Row::new(
                         {
+                            //column = [relation type, relation name, relation definition]
                             let mut column: [Cell; 3] = [Cell::from(""),Cell::from(""),Cell::from("")];
 
                             match r {
@@ -93,62 +100,93 @@ impl Renderable for RelationListPage{
                                         table.name.clone()
                                     });
                                     column[2] = Cell::from({
-                                        let spans: Spans = match r {
-                                            Relation::Table(table) => {
-                                                Spans::from(
-                                                    {
-                                                        let spans_vec: Vec<Span> = {
-                                                            let mut spans_vec: Vec<Span> = Vec::new();
-                                                            table.attributes.iter()
-                                                            .map(
-                                                                |a| {
-                                                                    Span::from(a.to_string())
+                                        let spans: Spans = Spans::from({
+                                            let spans_vec: Vec<Span> = {
+                                                let mut spans_vec: Vec<Span> = Vec::new();
+                                                table.attributes.iter()
+                                                    .enumerate()
+                                                    .map(
+                                                        |(index,a)| {
+                                                            Span::styled(
+                                                                a.to_string(),
+                                                                match (table.primary_key) {
+                                                                    //apply primary key style
+                                                                    Some(primary_key) => {
+                                                                        if primary_key == index {
+                                                                            Style::default()
+                                                                            .fg(Color::Black)
+                                                                            .bg(
+                                                                            self.col_map
+                                                                                .get(
+                                                                                    &(
+                                                                                        table.name.clone(),
+                                                                                        a.name.clone()
+                                                                                    )
+                                                                                )
+                                                                                .unwrap()
+                                                                                .clone()
+                                                                            )
+                                                                        }
+                                                                        else {
+                                                                            Style::default()
+                                                                        }
+                                                                    },
+                                                                    //check for foreign key style
+                                                                    None => {
+                                                                        let foreign_key = a.constraint
+                                                                            .iter()
+                                                                            .filter(|a| {
+                                                                                if let table::Constraint::ForeignKey{..} = a {
+                                                                                    return true;
+                                                                                }
+                                                                                return false;
+                                                                            })
+                                                                            .nth(0);
+                                                                        
+                                                                        match foreign_key {
+                                                                            Some(val) => {
+                                                                                match val {
+                                                                                    table::Constraint::ForeignKey{table_name, attribute_name} => {
+                                                                                        Style::default()
+                                                                                            .fg(Color::Black)
+                                                                                            .bg(
+                                                                                                self.col_map.get(
+                                                                                                    &(
+                                                                                                        table_name.clone(),
+                                                                                                        attribute_name.clone()
+                                                                                                    )
+                                                                                                ).unwrap()
+                                                                                                .clone()
+                                                                                            )
+                                                                                    },
+                                                                                    _ => panic!()
+                                                                                }
+                                                                            },
+                                                                            None => Style::default()
+                                                                        }
+                                                                    }
                                                                 }
                                                             )
-                                                            .for_each(
-                                                                |s| {
-                                                                    spans_vec.push(s);
-                                                                    spans_vec.push(Span::from(", "))
-                                                                }
-                                                            );
-
-                                                            spans_vec.pop();
-                                                            spans_vec
-                                                        };
-
-                                                        if let Some(key) = table.primary_key {
-                                                            spans_vec.get(key).unwrap().style.bg(
-                                                                self.col_map.get(
-                                                                    &table.attributes
-                                                                    .get(key)
-                                                                    .unwrap()
-                                                                    .name
-                                                                    .clone()
-                                                                ).unwrap()
-                                                                .clone()
-                                                            );
                                                         }
+                                                    )
+                                                    .for_each(//add "," between attributes
+                                                        |s| {
+                                                            spans_vec.push(s);
+                                                            spans_vec.push(Span::from(", "))
+                                                        }
+                                                    );
 
-                                                        spans_vec
-                                                    }
-                                                )
-                                            },
-                                            Relation::View(view) => {
-                                                Spans::from(
-                                                    if let Query::Select(query) = view {
-                                                        query.clone()
-                                                    }
-                                                    else {
-                                                        panic!()
-                                                    }
-                                                )
-                                            }
-                                        };
+                                                spans_vec.pop();
+                                                spans_vec
+                                            };
+
+                                            spans_vec
+                                        });
                                         column_length.2 = max(column_length.2, spans.width() as u16);
                                         spans
                                     });
                                 },
-                                Relation::View(view) => {
+                                Relation::View(_view) => {
                                     column[0] = Cell::from("View");
                                     column[1] = Cell::from({
                                         todo!();
@@ -156,7 +194,7 @@ impl Renderable for RelationListPage{
                                     });
                                     column[2] = Cell::from(
                                         Spans::from(
-                                            if let Query::Select(query) = view {
+                                            if let Query::Select(query) = _view {
                                                 query.clone()
                                             }
                                             else {
