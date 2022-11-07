@@ -77,7 +77,6 @@ impl RelationListPage {
         RelationListPage{ col_map: col_map, relations: relations }
     }
 
-    
 }
 
 impl Renderable for RelationListPage{
