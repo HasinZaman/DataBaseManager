@@ -47,6 +47,17 @@ impl PartialEq for Constraint {
     }
 }
 
+impl fmt::Display for Constraint{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Constraint::NotNull => write!(f, "Not Null"),
+            Constraint::Unique => write!(f, "Unique"),
+            Constraint::ForeignKey{table_name: table,attribute_name: attr} => write!(f, "FOREIGN KEY REFERENCES {}({})", table, attr),
+            Constraint::AutoIncrement => write!(f, "Auto Increment"),
+        }
+    }
+}
+
 /// AttributeType defines every type of MySQL datatype
 #[derive(Clone, Debug)]
 pub enum AttributeType{
