@@ -237,19 +237,3 @@ impl Renderable for RelationListPage{
         frame.render_widget(table, display_area);
     }
 }
-
-pub struct RelationPage{
-    pub relation: Relation
-}
-
-impl RelationPage {
-    fn new(relation: Relation) -> RelationPage {
-        RelationPage { relation: relation }
-    }
-}
-
-impl Renderable for RelationPage{
-    fn render<T: std::io::Write>(&self, display_area: Rect, frame: &mut Frame<CrosstermBackend<T>>) {
-        todo!()
-    }
-}
