@@ -4,7 +4,8 @@ use super::query::Query;
 
 pub mod table;
 
-#[derive(Clone)]
+//Relation Defines the two relations that can exist in a MySql database
+#[derive(Clone, Debug)]
 pub enum Relation{
     Table(Table),
     View(Query),
