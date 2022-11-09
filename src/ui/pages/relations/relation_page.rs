@@ -3,18 +3,18 @@ use tui::{layout::Rect, Frame, backend::CrosstermBackend, text::{Spans, Span}, w
 use crate::{backend::relation::{Relation}, ui::renderable::Renderable};
 
 /// RelationPage struct handles the state required in order render a single relation
-pub struct RelationPage{
-    pub relation: Relation
+pub struct RelationPage<'a>{
+    pub relation: &'a Relation
 }
 
-impl RelationPage {
+impl <'a>RelationPage<'a> {
     /// new associative function initializes RelationPage
-    pub fn new(relation: Relation) -> RelationPage {
-        RelationPage { relation: relation }
+    pub fn new(relation: &'a Relation) -> RelationPage<'a> {
+        RelationPage{ relation: relation }
     }
 }
 
-impl Renderable for RelationPage{
+impl <'a>Renderable for RelationPage<'a>{
     fn render<T: std::io::Write>(&self, display_area: Rect, frame: &mut Frame<CrosstermBackend<T>>) {
         let lines : Vec<Spans> = {
             vec![

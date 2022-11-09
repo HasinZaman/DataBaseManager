@@ -23,15 +23,15 @@ fn rand_col() -> Color {
 
 /// RelationListPage struct defines the states required in-order to maintain a Relation List Page on the relation tab
 #[derive(Debug)]
-pub struct RelationListPage{
-    relations: Vec<Relation>,
+pub struct RelationListPage<'a>{
+    relations: &'a Vec<Relation>,
     col_map: HashMap<(String, String), Color>
 
 }
 
-impl RelationListPage {
+impl <'a>RelationListPage<'a> {
     /// from associative function defines RelationListPage from a vector of Relations
-    pub fn from(relations: Vec<Relation>) -> RelationListPage {
+    pub fn from(relations: &'a Vec<Relation>) -> RelationListPage<'a> {
         let mut col_map = HashMap::new();
 
         relations.clone().into_iter()
@@ -74,12 +74,12 @@ impl RelationListPage {
                 }
             );
 
-        RelationListPage{ col_map: col_map, relations: relations }
+        RelationListPage{ col_map: col_map, relations: &relations }
     }
 
 }
 
-impl Renderable for RelationListPage{
+impl <'a>Renderable for RelationListPage<'a>{
     fn render<T: std::io::Write>(&self, display_area: Rect, frame: &mut Frame<CrosstermBackend<T>>) {
         let mut column_length : (u16, u16, u16) = (5, "Name".len() as u16, "Definition".len() as u16);
 
