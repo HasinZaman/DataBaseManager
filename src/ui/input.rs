@@ -104,7 +104,7 @@ impl Input {
 }
 impl Default for Input{
     fn default() -> Input {
-        Input::from("".to_string(), Option::None, true)
+        Input::from(String::from(""), Option::None, true)
     }
 }
 impl fmt::Display for Input {
@@ -258,10 +258,10 @@ mod tests{
 
     #[test]
     fn new_5_test() {
-        let actual = Input::new(vec!['a','b','c'], Some("prompt".to_string()), 3, true);
+        let actual = Input::new(vec!['a','b','c'], Some(String::from("prompt")), 3, true);
         let expected:Result<Input, InputErr> = Ok(Input { 
                 content: vec!['a','b','c'],
-                prompt: Some("prompt".to_string()),
+                prompt: Some(String::from("prompt")),
                 cursor: 3,
                 input_cond: true,
             });
@@ -285,7 +285,7 @@ mod tests{
 
     #[test]
     fn from_1_test() {
-        let actual = Input::from("abc".to_string(), None, true);
+        let actual = Input::from(String::from("abc"), None, true);
         let expected = Input { 
             content: vec!['a','b','c'],
             prompt: None,
@@ -301,10 +301,10 @@ mod tests{
     
     #[test]
     fn from_2_test() {
-        let actual = Input::from("abc".to_string(), Some("prompt".to_string()), true);
+        let actual = Input::from(String::from("abc"), Some(String::from("prompt")), true);
         let expected = Input { 
             content: vec!['a','b','c'],
-            prompt: Some("prompt".to_string()),
+            prompt: Some(String::from("prompt")),
             cursor: 3,
             input_cond: true,
         };
@@ -317,10 +317,10 @@ mod tests{
 
     #[test]
     fn from_3_test() {
-        let actual = Input::from("".to_string(), Some("prompt".to_string()), true);
+        let actual = Input::from(String::from(""), Some(String::from("prompt")), true);
         let expected = Input { 
             content: Vec::new(),
-            prompt: Some("prompt".to_string()),
+            prompt: Some(String::from("prompt")),
             cursor: 0,
             input_cond: true,
         };
@@ -381,7 +381,7 @@ mod tests{
 
     #[test]
     fn cursor_1_test() {
-        let mut actual = Input::from("Hello World".to_string(), None, true);
+        let mut actual = Input::from(String::from("Hello World"), None, true);
 
         assert_eq!(actual.cursor(), 11);
 
@@ -400,7 +400,7 @@ mod tests{
 
     #[test]
     fn cursor_2_test() {
-        let mut actual = Input::from("Hello World".to_string(), None, true);
+        let mut actual = Input::from(String::from("Hello World"), None, true);
         actual.cursor_left(actual.cursor());
         assert_eq!(actual.cursor(), 0);
 
@@ -410,13 +410,13 @@ mod tests{
     
     #[test]
     fn cursor_3_test() {
-        let mut actual = Input::from("Hello World".to_string(), None, true);
+        let mut actual = Input::from(String::from("Hello World"), None, true);
         actual.cursor_right(1);
         assert_eq!(actual.cursor(), 11);
     }
     #[test]
     fn cursor_4_test() {
-        let mut actual = Input::from("Hello World".to_string(), None, false);
+        let mut actual = Input::from(String::from("Hello World"), None, false);
 
         assert_eq!(actual.cursor(), 11);
 
@@ -429,7 +429,7 @@ mod tests{
 
     #[test]
     fn add_char_1_test() {
-        let mut actual = Input::from("".to_string(), None, true);
+        let mut actual = Input::from(String::from(""), None, true);
 
         assert_eq!(
             "\"\"\tcursor:0",
@@ -480,7 +480,7 @@ mod tests{
 
     #[test]
     fn del_char_1_test() {
-        let mut actual = Input::from("123456".to_string(), None, true);
+        let mut actual = Input::from(String::from("123456"), None, true);
 
         assert_eq!(
             "\"123456\"\tcursor:6",

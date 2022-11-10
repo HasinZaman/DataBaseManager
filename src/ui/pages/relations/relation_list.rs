@@ -193,12 +193,16 @@ impl <'a>Renderable for RelationListPage<'a>{
                                     });
                                     column[2] = Cell::from(
                                         Spans::from(
-                                            if let Query::Select(query) = _view {
-                                                query.clone()
+                                            {
+                                                todo!();
+                                                ""
                                             }
-                                            else {
-                                                panic!()
-                                            }
+                                            // if let Query::Select(query) = _view {
+                                            //     query.clone()
+                                            // }
+                                            // else {
+                                            //     panic!()
+                                            // }
                                         )
                                     );
                                 }
@@ -220,9 +224,9 @@ impl <'a>Renderable for RelationListPage<'a>{
             .header(
                 Row::new(
                     vec![
-                        Cell::from("Type".to_string()),
-                        Cell::from("Name".to_string()),
-                        Cell::from("Definition".to_string()),
+                        Cell::from(String::from("Type")),
+                        Cell::from(String::from("Name")),
+                        Cell::from(String::from("Definition")),
                     ]
                 )
             )
