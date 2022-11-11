@@ -1,14 +1,13 @@
-use self::table::Table;
-
-use super::query::Query;
+use self::{table::Table, view::View};
 
 pub mod table;
+pub mod view;
 
 //Relation Defines the two relations that can exist in a MySql database
 #[derive(Clone, Debug)]
 pub enum Relation{
     Table(Table),
-    View(Query),
+    View(View),
 }
 
 impl Relation {
