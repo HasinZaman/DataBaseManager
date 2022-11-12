@@ -2,16 +2,16 @@ use crate::backend::query::{Query};
 
 #[derive(Clone, Debug)]
 pub struct View{
-    name: String,
-    query: Query
+    pub name: String,
+    pub query: Query
 }
 
 impl View {
-    pub fn new(name: String, query: Query) -> Option<View> {
+    pub fn new(name: &str, query: Query) -> Option<View> {
         if let Query::Select(_query) = &query {
             return Some(
                 View{
-                    name: name,
+                    name: name.to_string(),
                     query: query
                 }
             );
