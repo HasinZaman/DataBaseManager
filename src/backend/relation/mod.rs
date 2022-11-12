@@ -15,7 +15,7 @@ impl Relation {
     pub fn name(&self) -> String {
         match self {
             Relation::Table(table) => table.name.clone(),
-            Relation::View(_view) => todo!()
+            Relation::View(view) => view.name.clone()
         }
     }
 }
