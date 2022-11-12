@@ -22,7 +22,7 @@ impl <'a>Renderable for RelationPage<'a>{
                 vec![Spans::from(self.relation.name())],
 
                 //define relation definition lines
-                match &self.relation {
+                match self.relation {
                     Relation::Table(table) => {
                         table.attributes
                             .iter()
@@ -66,7 +66,36 @@ impl <'a>Renderable for RelationPage<'a>{
                             })
                             .collect()
                     },
-                    Relation::View(_veiw) => todo!()
+                    Relation::View(view) => {
+                        vec![
+                            Spans::from(
+                                {
+                                    let mut words: Vec<Span> = view.query.to_string()
+                                        .split(" ")
+                                        .map(
+                                            |str: &str| {
+                                                Span::from(str.to_string())
+                                            }
+                                        )
+                                        .collect();
+                                    
+                                    {
+                                        let size = words.len()-1;
+                                        (0..size)
+                                        .for_each(
+                                            |i1| {
+                                                words.insert(size - i1, Span::from(" "))
+                                            }
+                                        );
+                                    }
+
+                                    words.insert(0, Span::from("└ "));
+
+                                    words
+                                }
+                            )
+                        ]
+                    }
                 }
             ].concat()
         };

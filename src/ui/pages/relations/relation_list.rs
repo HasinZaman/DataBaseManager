@@ -8,7 +8,7 @@ use tui::{
     layout::{Rect, Constraint}, text::{Spans, Span}
 };
 
-use crate::{ui::{renderable::Renderable}, backend::{query::Query, relation::table}};
+use crate::{ui::{renderable::Renderable}, backend::{relation::table}};
 use crate::backend::relation::Relation;
 
 /// rand_col function returns a random colour
@@ -44,32 +44,19 @@ impl <'a>RelationListPage<'a> {
                                 None => false
                             }
                         },
-                        Relation::View(_query)=> {
-                            return false;
-                            /*match query{
-                                Query::Select(cmd) => {
-                                    todo!()
-                                },
-                                _ => false,
-                            }*/
-                        },
+                        Relation::View(_query) => false,
                     }
                 }
             ).for_each(
                 |relation| {
-                    match relation {
-                        Relation::Table(table) => {
-                            col_map.insert(
-                                (
-                                    table.name.clone(),
-                                    table.attributes.get(table.primary_key.unwrap()).unwrap().name.clone()
-                                ),
-                                rand_col()
-                            );
-                        },
-                        Relation::View(_query) => {
-                            todo!()
-                        }
+                    if let Relation::Table(table) = relation {
+                        col_map.insert(
+                            (
+                                table.name.clone(),
+                                table.attributes.get(table.primary_key.unwrap()).unwrap().name.clone()
+                            ),
+                            rand_col()
+                        );
                     }
                 }
             );
@@ -89,15 +76,19 @@ impl <'a>Renderable for RelationListPage<'a>{
                     Row::new(
                         {
                             //column = [relation type, relation name, relation definition]
-                            let mut column: [Cell; 3] = [Cell::from(""),Cell::from(""),Cell::from("")];
+                            let mut column: [Cell; 3] = [
+                                Cell::from(""),
+                                Cell::from({
+                                    let name = r.name();
+                                    column_length.1 = max(column_length.1, name.len() as u16);
+                                    name
+                                }),
+                                Cell::from("")
+                            ];
 
                             match r {
                                 Relation::Table(table) => {
                                     column[0] = Cell::from("Table");
-                                    column[1] = Cell::from({
-                                        column_length.1 = max(column_length.1, table.name.len() as u16);
-                                        table.name.clone()
-                                    });
                                     column[2] = Cell::from({
                                         let spans: Spans = Spans::from({
                                             let spans_vec: Vec<Span> = {
@@ -185,28 +176,36 @@ impl <'a>Renderable for RelationListPage<'a>{
                                         spans
                                     });
                                 },
-                                Relation::View(_view) => {
+                                Relation::View(view) => {
                                     column[0] = Cell::from("View");
-                                    column[1] = Cell::from({
-                                        todo!();
-                                        ""
-                                    });
                                     column[2] = Cell::from(
                                         Spans::from(
                                             {
-                                                todo!();
-                                                ""
+                                                let mut words: Vec<Span> = view.query.to_string()
+                                                    .split(" ")
+                                                    .map(
+                                                        |str: &str| {
+                                                            Span::from(str.to_string())
+                                                        }
+                                                    )
+                                                    .collect();
+                                                
+                                                {
+                                                    let size = words.len()-1;
+                                                    (0..size)
+                                                    .for_each(
+                                                        |i1| {
+                                                            words.insert(size - i1, Span::from(" "))
+                                                        }
+                                                    );
+                                                }
+                                
+                                                words
                                             }
-                                            // if let Query::Select(query) = _view {
-                                            //     query.clone()
-                                            // }
-                                            // else {
-                                            //     panic!()
-                                            // }
                                         )
                                     );
                                 }
-                            }
+                            };
 
                             column
                         }
