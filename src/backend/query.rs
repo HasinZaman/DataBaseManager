@@ -1,6 +1,9 @@
-use std::fmt;
+use std::{fmt, env::VarError};
 
+use mysql::{Error};
 use regex::Regex;
+
+use super::data_base::{DataBase, RowMap};
 
 const SELECT_REGEX : &str = "S|sE|eL|lE|eC|cT|t .+";
 const INSERT_REGEX : &str = "I|iN|nS|sE|eR|rT|t .+";
@@ -8,9 +11,11 @@ const UPDATE_REGEX : &str = "U|uP|pD|dA|aT|tE|e .+";
 const DELETE_REGEX : &str = "D|dE|eL|lE|eT|tE|e .+";
 
 #[derive(Debug)]
-pub enum QueryErr{
+pub enum QueryError{
     NoMethodInQuery,
     InvalidQuery{expected_variant: Query},
+    FailedToConnect(VarError),
+    Execution(Error),
     Err(String)
 }
 
@@ -24,7 +29,7 @@ pub enum Query {
 }
 
 impl Query {
-    pub fn from(query: &str) -> Result<Query, QueryErr> {
+    pub fn from(query: &str) -> Result<Query, QueryError> {
         if let Some(_mat) = Regex::new(SELECT_REGEX).unwrap().find(&query){
             return Ok(Query::Select(query.to_string()));
         }
@@ -38,12 +43,25 @@ impl Query {
             return Ok(Query::Delete(query.to_string()));
         }
 
-        Result::Err(QueryErr::NoMethodInQuery)
+        Result::Err(QueryError::NoMethodInQuery)
     }
 
-    pub fn execute(&self) {
-        //execute thing and return rows
-        todo!();
+    pub fn execute<E>(&self, row_map: RowMap<E>) -> Result<Vec<E>, QueryError> {
+        let db = DataBase::from_env();
+
+        match db {
+            Ok(db) => {
+                let tmp: Vec<E> = match db.execute(&self.to_string(), row_map){
+                    Ok(val) => val,
+                    Err(err) => return Err(QueryError::Execution(err)),
+                };
+
+                Ok(tmp)
+            },
+            Err(err) => {
+                Err(QueryError::FailedToConnect(err))
+            }
+        }
     }
 }
 
