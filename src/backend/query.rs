@@ -1,9 +1,9 @@
 use std::{fmt, env::VarError};
 
-use mysql::{Error};
+use mysql::{Error, Row};
 use regex::Regex;
 
-use super::data_base::{DataBase, RowMap};
+use super::data_base::{DataBase};
 
 const SELECT_REGEX : &str = "S|sE|eL|lE|eC|cT|t .+";
 const INSERT_REGEX : &str = "I|iN|nS|sE|eR|rT|t .+";
@@ -46,7 +46,7 @@ impl Query {
         Result::Err(QueryError::NoMethodInQuery)
     }
 
-    pub fn execute<E>(&self, row_map: RowMap<E>) -> Result<Vec<E>, QueryError> {
+    pub fn execute<E, F>(&self, row_map: F) -> Result<Vec<E>, QueryError> where F : Fn(Result<Row, Error>) -> E {
         let db = DataBase::from_env();
 
         match db {

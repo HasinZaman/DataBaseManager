@@ -13,8 +13,6 @@ macro_rules! load_env_var {
     };
 }
 
-pub type RowMap<E> = fn(row: Result<Row, Error>) -> E;
-
 #[derive(Debug)]
 pub struct DataBase {
     host: String,
@@ -50,7 +48,7 @@ impl DataBase {
         Conn::new(url).unwrap()
     }
     
-    pub fn execute<E>(&self, command: &str, row_map: RowMap<E> ) -> Result<Vec<E>, Error> {
+    pub fn execute<E, F>(&self, command: &str, row_map: F ) -> Result<Vec<E>, Error> where F : Fn(Result<Row, Error>) -> E{
         let mut conn = self.get_conn();
 
         let statement = conn.prep(command).unwrap();
