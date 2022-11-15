@@ -28,8 +28,7 @@ impl Relation {
 
                                 return Some((name, relation_type));
                             },
-                            Err(err) => {
-                                println!("{}", err);
+                            Err(_err) => {
                                 return None;
                             }
                         };
@@ -63,8 +62,6 @@ impl Relation {
                     }
                 })
                 .collect();
-
-                println!("{:?}", rows);
 
                 return Ok(rows)
             },
