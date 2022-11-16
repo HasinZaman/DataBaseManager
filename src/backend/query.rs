@@ -5,10 +5,10 @@ use regex::Regex;
 
 use super::data_base::{DataBase};
 
-const SELECT_REGEX : &str = "S|sE|eL|lE|eC|cT|t .+";
-const INSERT_REGEX : &str = "I|iN|nS|sE|eR|rT|t .+";
-const UPDATE_REGEX : &str = "U|uP|pD|dA|aT|tE|e .+";
-const DELETE_REGEX : &str = "D|dE|eL|lE|eT|tE|e .+";
+const SELECT_REGEX : &str = "^[Ss][Ee][Ll][Ee][Cc][Tt] .+";
+const INSERT_REGEX : &str = "^[Ii][Nn][Ss][Ee][Rr][Tt] .+";
+const UPDATE_REGEX : &str = "^[Uu][Pp][Dd][Aa][Tt][Ee] .+";
+const DELETE_REGEX : &str = "^[Dd][Ee][Ll][Ee][Tt][Ee] .+";
 
 #[derive(Debug)]
 pub enum QueryError{
