@@ -48,7 +48,7 @@ impl DataBase {
         Conn::new(url).unwrap()
     }
     
-    pub fn execute<E, F>(&self, command: &str, row_map: F ) -> Result<Vec<E>, Error> where F : Fn(Result<Row, Error>) -> E{
+    pub fn execute<E, F>(&self, command: &str, row_map: F ) -> Result<Vec<E>, Error> where F : FnMut(Result<Row, Error>) -> E{
         let mut conn = self.get_conn();
 
         let statement = conn.prep(command).unwrap();
