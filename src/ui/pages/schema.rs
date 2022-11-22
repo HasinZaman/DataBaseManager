@@ -166,6 +166,10 @@ impl<'a> QueryPage<'a> {
             }
         )
     }
+
+    pub fn len(&self) -> (usize, usize) {
+        (self.query_cache.columns.len(), self.query_cache.rows.len())
+    }
 }
 
 impl<'a> Renderable for QueryPage<'a>{
