@@ -8,8 +8,17 @@ edition = "2021"
 [dependencies]
 tui = "0.19"
 crossterm = "0.25"
+
 strum = "0.24"
 strum_macros = "0.24"
+
 rand = "0.8.5"
+
 mysql = "*"
+
 regex = "1"
+
+time = {version = "*", features = ["serde", "macros"] }
+
+ron = "0.8"
+serde = { version = "1", features = ["derive"] }
