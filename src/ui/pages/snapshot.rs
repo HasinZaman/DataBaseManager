@@ -62,14 +62,14 @@ impl SnapShotsFile{
 
         let buffer = ron::to_string(&self).unwrap();
         let buffer = buffer.as_bytes();
-        
+
         match file.write(buffer) {
             Ok(written_bytes) => {
                 if written_bytes == buffer.len() {
                     return Ok(())
                 }
                 todo!();
-                return Err(Error::Err(String::from("")))
+                //return Err(Error::Err(String::from("")))
             },
             Err(err) => return Err(Error::FileWriteErr(err)),
         }
