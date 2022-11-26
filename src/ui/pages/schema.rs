@@ -1,6 +1,8 @@
 use std::cmp::{max, min};
 
 use regex::{Regex, Captures};
+use lazy_static::lazy_static;
+
 use tui::{Frame,backend::CrosstermBackend, layout::{Rect, Constraint}, widgets::{Table, Row, Cell, Block, Borders},};
 
 use crate::{ui::renderable::Renderable, backend::{query::{Query, QueryError}, data_base::DataBase}};
@@ -131,16 +133,18 @@ impl<'a> QueryPage<'a> {
     }
 
     fn get_query(&self, row_count: usize) -> Query {
-        let exist_opp = Regex::new("^[Ss][Ee][Ll][Ee][Cc][Tt] .+ [Ll][Ii][Mm][Ii][Tt] (\\d+),?([\\d]+)?$").unwrap();
+        lazy_static! {
+            static ref EXIST_OPERATION_REGEX : Regex = Regex::new("^[Ss][Ee][Ll][Ee][Cc][Tt] .+ [Ll][Ii][Mm][Ii][Tt] (\\d+),?([\\d]+)?$").unwrap();
+        };
 
         let tmp_query = self.query.to_string();
 
         Query::Select(
-            match exist_opp.is_match(&tmp_query) {
+            match EXIST_OPERATION_REGEX.is_match(&tmp_query) {
                 true => {
-                    let captures = exist_opp.captures(&tmp_query).unwrap();
+                    let captures = EXIST_OPERATION_REGEX.captures(&tmp_query).unwrap();
                 
-                    exist_opp.replace(
+                    EXIST_OPERATION_REGEX.replace(
                         &tmp_query,
                         |_cap: &Captures| {
                             format!(

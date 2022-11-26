@@ -1,4 +1,5 @@
 use regex::Regex;
+use lazy_static::lazy_static;
 
 use crate::backend::{query::{Query}, data_base::DataBase};
 
@@ -17,9 +18,11 @@ impl View {
             |row| {
                 let tmp_str: String = row.unwrap().get(1).unwrap();
 
-                let view_def : Regex = Regex::new("[s|S][e|E][l|L][e|E][c|C][t|T] [a-zA-Z0-9`., ()=]+").unwrap();
+                lazy_static! {
+                    static ref VIEW_REGEX : Regex = Regex::new("[s|S][e|E][l|L][e|E][c|C][t|T] [a-zA-Z0-9`., ()=]+").unwrap();
+                };
 
-                view_def.captures(&tmp_str)
+                VIEW_REGEX.captures(&tmp_str)
                     .unwrap()
                     .get(0)
                     .unwrap()

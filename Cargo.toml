@@ -17,6 +17,7 @@ rand = "0.8.5"
 mysql = "*"
 
 regex = "1"
+lazy_static = "*"
 
 time = {version = "*", features = ["serde", "macros"] }
 

@@ -2,13 +2,9 @@ use std::{fmt, env::VarError};
 
 use mysql::{Error, Row};
 use regex::Regex;
+use lazy_static::lazy_static;
 
 use super::data_base::{DataBase};
-
-const SELECT_REGEX : &str = "^[Ss][Ee][Ll][Ee][Cc][Tt] .+";
-const INSERT_REGEX : &str = "^[Ii][Nn][Ss][Ee][Rr][Tt] .+";
-const UPDATE_REGEX : &str = "^[Uu][Pp][Dd][Aa][Tt][Ee] .+";
-const DELETE_REGEX : &str = "^[Dd][Ee][Ll][Ee][Tt][Ee] .+";
 
 #[derive(Debug)]
 pub enum QueryError{
@@ -30,16 +26,29 @@ pub enum Query {
 
 impl Query {
     pub fn from(query: &str) -> Result<Query, QueryError> {
-        if let Some(_mat) = Regex::new(SELECT_REGEX).unwrap().find(&query){
+        lazy_static! {
+            static ref SELECT_REGEX: Regex = Regex::new("^[Ss][Ee][Ll][Ee][Cc][Tt] .+").unwrap();
+        };
+        lazy_static! {
+            static ref INSERT_REGEX: Regex = Regex::new("^[Ii][Nn][Ss][Ee][Rr][Tt] .+").unwrap();
+        };
+        lazy_static! {
+            static ref UPDATE_REGEX: Regex = Regex::new("^[Uu][Pp][Dd][Aa][Tt][Ee] .+").unwrap();
+        };
+        lazy_static! {
+            static ref DELETE_REGEX: Regex = Regex::new("^[Dd][Ee][Ll][Ee][Tt][Ee] .+").unwrap();
+        };
+
+        if let Some(_mat) = SELECT_REGEX.find(&query){
             return Ok(Query::Select(query.to_string()));
         }
-        else if let Some(_mat) = Regex::new(INSERT_REGEX).unwrap().find(&query){
+        else if let Some(_mat) = INSERT_REGEX.find(&query){
             return Ok(Query::Insert(query.to_string()));
         }
-        else if let Some(_mat) = Regex::new(UPDATE_REGEX).unwrap().find(&query){
+        else if let Some(_mat) = UPDATE_REGEX.find(&query){
             return Ok(Query::Update(query.to_string()));
         }
-        else if let Some(_mat) = Regex::new(DELETE_REGEX).unwrap().find(&query){
+        else if let Some(_mat) = DELETE_REGEX.find(&query){
             return Ok(Query::Delete(query.to_string()));
         }
 
