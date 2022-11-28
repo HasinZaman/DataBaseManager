@@ -45,12 +45,11 @@ pub fn parse_sql_file(file_path: &str) -> Result<Vec<String>, std::io::Error> {
 }
 
 fn extract_cmd(query_cmd: &mut String, results: &mut Vec<String>) {
+    //remove all comments
     lazy_static! {
         static ref COMMENT_CHECK_REGEX: Regex = Regex::new("--.*\n$").unwrap();
     };
-    //remove all command
-    *query_cmd = COMMENT_CHECK_REGEX.replace_all(&*query_cmd, " ").to_string();
-
+    *query_cmd = COMMENT_CHECK_REGEX.replace_all(&*query_cmd, "").to_string();
     
     //check if just bunch of \n
     lazy_static! {
@@ -58,13 +57,14 @@ fn extract_cmd(query_cmd: &mut String, results: &mut Vec<String>) {
     };
     *query_cmd = CMD_TRIM_REGEX.replace_all(&*query_cmd, "").to_string();
 
+
+    //check if command ends
     lazy_static! {
         static ref CMD_END_CHECK_REGEX: Regex = Regex::new(";\r?\n?$").unwrap();
     };
-    //check if command ends
+
     if CMD_END_CHECK_REGEX.is_match(query_cmd) {
         let query_cmd_tmp = CMD_END_CHECK_REGEX.replace(query_cmd, "");
-        println!("str: \"{}\"", query_cmd_tmp);
         results.push(query_cmd_tmp.to_string());
         query_cmd.clear();
     }
