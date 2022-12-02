@@ -6,8 +6,6 @@ use lazy_static::lazy_static;
 
 use super::data_base::{DataBase, DatabaseExecute};
 
-pub mod parse;
-
 #[derive(Debug)]
 pub enum SQLError{
     NotValidCMD,
@@ -17,7 +15,7 @@ pub enum SQLError{
     Err(String)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DDL(pub String);
 impl Deref for DDL {
     type Target = String;
@@ -50,7 +48,7 @@ impl DatabaseExecute for DDL{
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QDL(pub String);
 impl Deref for QDL {
     type Target = String;
@@ -83,7 +81,7 @@ impl DatabaseExecute for QDL{
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QML(pub String);
 impl Deref for QML {
     type Target = String;
@@ -116,7 +114,7 @@ impl DatabaseExecute for QML{
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DCL(pub String);
 impl Deref for DCL {
     type Target = String;
@@ -149,14 +147,13 @@ impl DatabaseExecute for DCL{
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SQL {
     //Data Definition Language
     Create(DDL),
     Alter(DDL),
     Drop(DDL),
     Truncate(DDL),
-    Comment(DDL),
 
     //Querying Data Language
     Select(QDL),
@@ -200,7 +197,6 @@ impl SQL {
         SQL_Parse!(Alter, DDL, "^[Aa][Ll][Tt][Ee][Rr] .+", query);
         SQL_Parse!(Drop, DDL, "^[Dd][Rr][Oo][Pp] .+", query);
         SQL_Parse!(Truncate, DDL, "^[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee] .+", query);
-        SQL_Parse!(Comment, DDL, "^[Cc][Oo][Mm][Mm][Ee][Nn][Tt] .+", query);
 
         //Querying Data Language
         SQL_Parse!(Select, QDL, "^[Ss][Ee][Ll][Ee][Cc][Tt] .+", query);
@@ -212,7 +208,7 @@ impl SQL {
 
         //Data Control language
         SQL_Parse!(Grant, DCL, "^[Gg][Rr][Aa][Nn][Tt] .+", query);
-        SQL_Parse!(Grant, DCL, "^[Rr][Ee][Vv][Oo][Kk][Ee] .+", query);
+        SQL_Parse!(Revoke, DCL, "^[Rr][Ee][Vv][Oo][Kk][Ee] .+", query);
 
         Result::Err(SQLError::NotValidCMD)
     }
@@ -222,8 +218,7 @@ impl SQL {
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
             SQL::Drop(ddl) |
-            SQL::Truncate(ddl) |
-            SQL::Comment(ddl) => Some(ddl),
+            SQL::Truncate(ddl) => Some(ddl),
             _ => None,
         }
     }
@@ -232,8 +227,7 @@ impl SQL {
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
             SQL::Drop(ddl) |
-            SQL::Truncate(ddl) |
-            SQL::Comment(ddl) => Some(ddl),
+            SQL::Truncate(ddl) => Some(ddl),
             _ => None,
         }
     }
@@ -288,8 +282,7 @@ impl SQL {
             SQL::Create(_) |
             SQL::Alter(_) |
             SQL::Drop(_) | 
-            SQL::Truncate(_) |
-            SQL::Comment(_) => SQLLanguage::DDL,
+            SQL::Truncate(_) => SQLLanguage::DDL,
 
             SQL::Select(_) => SQLLanguage::QDL,
 
@@ -328,8 +321,7 @@ impl DatabaseExecute for SQL{
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
             SQL::Drop(ddl) |
-            SQL::Truncate(ddl) |
-            SQL::Comment(ddl) => ddl.execute(row_map),
+            SQL::Truncate(ddl) => ddl.execute(row_map),
 
             SQL::Select(qdl) => qdl.execute(row_map),
 
@@ -349,8 +341,7 @@ impl fmt::Display for SQL {
             SQL::Create(cmd) |
             SQL::Alter(cmd) |
             SQL::Drop(cmd) | 
-            SQL::Truncate(cmd) |
-            SQL::Comment(cmd) => write!(f, "{}", **cmd),
+            SQL::Truncate(cmd) => write!(f, "{}", **cmd),
 
             SQL::Select(cmd) => write!(f, "{}", **cmd),
 
@@ -365,5 +356,265 @@ impl fmt::Display for SQL {
 }
 
 mod tests{
+    use super::*;
+    //test parsing
+    //Data Definition Language
+    #[test]
+    fn create_test_1() {
+        let input = "CREATE TABLE MyTable (RowId INT64 NOT NULL, `Order` INT64 ) PRIMARY KEY (RowId)";
 
+        let actual = SQL::from(input).unwrap();
+
+        
+        assert_eq!(
+            actual, 
+            SQL::Create(
+                DDL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.ddl(),
+            Some(
+                &DDL(
+                    input.to_string()
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn alter_test_1() {
+        let input = "ALTER DATABASE database_id";
+
+        let actual = SQL::from(input).unwrap();
+
+        
+        assert_eq!(
+            actual, 
+            SQL::Alter(
+                DDL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.ddl(),
+            Some(
+                &DDL(
+                    input.to_string()
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn drop_test_1() {
+        let input = "DROP TABLE table_name";
+
+        let actual = SQL::from(input).unwrap();
+
+        
+        assert_eq!(
+            actual, 
+            SQL::Drop(
+                DDL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.ddl(),
+            Some(
+                &DDL(
+                    input.to_string()
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn truncate_test_1() {
+        let input = "TRUNCATE TABLE table_name";
+
+        let actual = SQL::from(input).unwrap();
+
+        
+        assert_eq!(
+            actual, 
+            SQL::Truncate(
+                DDL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.ddl(),
+            Some(
+                &DDL(
+                    input.to_string()
+                )
+            )
+        );
+    }
+    //Query Data Language
+    #[test]
+    fn select_test_1() {
+        let input = "SELECT 1 + 1";
+
+        let actual = SQL::from(input).unwrap();
+
+        
+        assert_eq!(
+            actual, 
+            SQL::Select(
+                QDL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.qdl(),
+            Some(
+                &QDL(
+                    input.to_string()
+                )
+            )
+        );
+    }
+
+    //Query Manipulation Language
+    
+    #[test]
+    fn insert_test_1() {
+        let input = "INSERT INTO tbl_name (col1,col2) VALUES(15,col1*2)";
+
+        let actual = SQL::from(input).unwrap();
+
+        
+        assert_eq!(
+            actual, 
+            SQL::Insert(
+                QML(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.qml(),
+            Some(
+                &QML(
+                    input.to_string()
+                )
+            )
+        );
+    }
+    
+    #[test]
+    fn update_test_1() {
+        let input = "UPDATE t1 SET col1 = col1 + 1, col2 = col1";
+
+        let actual = SQL::from(input).unwrap();
+
+        assert_eq!(
+            actual, 
+            SQL::Update(
+                QML(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.qml(),
+            Some(
+                &QML(
+                    input.to_string()
+                )
+            )
+        );
+    }
+    
+    #[test]
+    fn delete_test_1() {
+        let input = "DELETE FROM somelog WHERE user = 'jcole' ORDER BY timestamp_column LIMIT 1";
+
+        let actual = SQL::from(input).unwrap();
+
+        assert_eq!(
+            actual, 
+            SQL::Delete(
+                QML(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.qml(),
+            Some(
+                &QML(
+                    input.to_string()
+                )
+            )
+        );
+    }
+    
+    //Data Control Language
+    #[test]
+    fn grant_test_1() {
+        let input = "GRANT ALL ON db1.* TO 'jeffrey'@'localhost'";
+
+        let actual = SQL::from(input).unwrap();
+
+        assert_eq!(
+            actual, 
+            SQL::Grant(
+                DCL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.dcl(),
+            Some(
+                &DCL(
+                    input.to_string()
+                )
+            )
+        );
+    }
+    
+    #[test]
+    fn revoke_test_1() {
+        let input = "REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost'";
+
+        let actual = SQL::from(input).unwrap();
+
+        assert_eq!(
+            actual, 
+            SQL::Revoke(
+                DCL(
+                    input.to_string()
+                )
+            )
+        );
+
+        assert_eq!(
+            actual.dcl(),
+            Some(
+                &DCL(
+                    input.to_string()
+                )
+            )
+        );
+    }
 }
