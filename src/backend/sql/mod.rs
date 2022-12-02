@@ -6,6 +6,8 @@ use lazy_static::lazy_static;
 
 use super::data_base::{DataBase, DatabaseExecute};
 
+mod file_insertion;
+
 #[derive(Debug)]
 pub enum SQLError{
     NotValidCMD,
@@ -192,6 +194,11 @@ macro_rules! SQL_Parse {
 impl SQL {
     pub fn from(query: &str) -> Result<SQL, SQLError> {
         
+        let query = match file_insertion::contents(query) {
+            Ok(val) => val,
+            Err(err) => return Err(SQLError::Err(err.to_string()))
+        };
+
         //Data Definition Language
         SQL_Parse!(Create, DDL, "^[Cc][Rr][Ee][Aa][Tt][Ee] .+", query);
         SQL_Parse!(Alter, DDL, "^[Aa][Ll][Tt][Ee][Rr] .+", query);
