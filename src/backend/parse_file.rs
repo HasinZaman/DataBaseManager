@@ -18,7 +18,7 @@ pub fn parse_sql_file(file_path: &str) -> Result<Vec<SQL>, std::io::Error> {
         let _f: File = File::open(file_path)?;
     }
 
-    let mut f: File = File::open(file_path).unwrap();
+    let mut file: File = File::open(file_path).unwrap();
 
     const BUFFER_SIZE: usize = 100;
 
@@ -27,7 +27,7 @@ pub fn parse_sql_file(file_path: &str) -> Result<Vec<SQL>, std::io::Error> {
 
     let mut results: Vec<SQL> = Vec::new();
     loop {
-        match f.read(&mut buffer) {
+        match file.read(&mut buffer) {
             Ok(0) => break,
             Ok(n) => {
 
