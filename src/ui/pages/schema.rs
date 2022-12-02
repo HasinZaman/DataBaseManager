@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 
 use tui::{Frame,backend::CrosstermBackend, layout::{Rect, Constraint}, widgets::{Table, Row, Cell, Block, Borders},};
 
-use crate::{ui::renderable::Renderable, backend::{query::{Query, QueryError}, data_base::DataBase}};
+use crate::{ui::renderable::Renderable, backend::{data_base::DataBase, sql::QDL}};
 
 struct QueryCache{
     pub start_col: usize,
@@ -14,34 +14,22 @@ struct QueryCache{
 }
 
 pub struct QueryPage<'a>{
-    query: &'a Query,
+    query: &'a QDL,
     query_offset: usize,
     query_cache: QueryCache
 }
 
 impl<'a> QueryPage<'a> {
-    pub fn new(query: &'a Query) -> Result<QueryPage<'a>, QueryError> {
-        if let Query::Select(_select_query) = query {
-            return Ok(
-                QueryPage {
-                    query: query,
-                    query_offset: 0,
-                    query_cache: QueryCache {
-                        start_col: 0,
-                        columns: Vec::new(),
-                        rows: Vec::new()
-                    }
-                }
-            )
-        }
-
-        Err(
-            QueryError::InvalidQuery{
-                expected_variant : Query::Select(
-                    String::from("")
-                )
+    pub fn new(query: &'a QDL) -> QueryPage<'a> {
+        QueryPage {
+            query: query,
+            query_offset: 0,
+            query_cache: QueryCache {
+                start_col: 0,
+                columns: Vec::new(),
+                rows: Vec::new()
             }
-        )
+        }
     }
 
     pub fn next_row(&mut self, skip: usize) -> &mut Self{
@@ -132,14 +120,14 @@ impl<'a> QueryPage<'a> {
         self
     }
 
-    fn get_query(&self, row_count: usize) -> Query {
+    fn get_query(&self, row_count: usize) -> QDL {
         lazy_static! {
             static ref EXIST_OPERATION_REGEX : Regex = Regex::new("^[Ss][Ee][Ll][Ee][Cc][Tt] .+ [Ll][Ii][Mm][Ii][Tt] (\\d+),?([\\d]+)?$").unwrap();
         };
 
         let tmp_query = self.query.to_string();
 
-        Query::Select(
+        QDL(
             match EXIST_OPERATION_REGEX.is_match(&tmp_query) {
                 true => {
                     let captures = EXIST_OPERATION_REGEX.captures(&tmp_query).unwrap();

@@ -2,6 +2,13 @@ use std::{fmt, env::{self, VarError}};
 
 use mysql::{prelude::*, Opts, Conn, Row, Error};
 
+pub trait DatabaseExecute{
+    type RowError;
+
+    fn execute<T,F>(&self, row_map: F) -> Result<Vec<T>, Self::RowError> where F : Fn(Result<Row, Error>) -> T;
+
+}
+
 macro_rules! load_env_var {
     ($key : literal) => {
         match env::var($key) {

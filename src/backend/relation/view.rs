@@ -1,12 +1,12 @@
 use regex::Regex;
 use lazy_static::lazy_static;
 
-use crate::backend::{query::{Query}, data_base::DataBase};
+use crate::backend::{data_base::DataBase, sql::{QDL, SQL}};
 
 #[derive(Clone, Debug)]
 pub struct View{
     pub name: String,
-    pub query: Query
+    pub query: QDL
 }
 
 impl View {
@@ -36,12 +36,7 @@ impl View {
                 Some(
                     View {
                         name: name.to_string(),
-                        query: match Query::from(query) {
-                            Ok(query) => query,
-                            Err(_err) => {
-                                return None
-                            }
-                        }
+                        query: SQL::from(query).unwrap().qdl().unwrap().clone()
                     }
                 )
             },
@@ -50,15 +45,10 @@ impl View {
 
     }
 
-    pub fn new(name: &str, query: Query) -> Option<View> {
-        if let Query::Select(_query) = &query {
-            return Some(
-                View{
-                    name: name.to_string(),
-                    query: query
-                }
-            );
+    pub fn new(name: &str, query: QDL) -> View {
+        View{
+            name: name.to_string(),
+            query: query
         }
-        None
     }
 }

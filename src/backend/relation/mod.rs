@@ -4,7 +4,7 @@ use crate::backend::data_base::DataBase;
 
 use self::{table::Table, view::View};
 
-use super::query::Query;
+use super::sql::{SQL};
 
 pub mod table;
 pub mod view;
@@ -79,9 +79,7 @@ impl Relation {
             Relation::View(view) => view.name.clone()
         }
     }
-    pub fn select(&self) -> Query {
-        Query::Select(
-            format!("SELECT * FROM {}", self.name())
-        )
+    pub fn select(&self) -> SQL {
+        SQL::from(&format!("SELECT * FROM {}", self.name())).unwrap()
     }
 }

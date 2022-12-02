@@ -2,7 +2,7 @@ use std::fs::File;
 
 use state_machine_future::*;
 
-use crate::backend::query::Query;
+use crate::backend::sql::QDL;
 
 #[derive(StateMachineFuture)]
 enum UpdateSchemaState {
@@ -16,7 +16,7 @@ enum UpdateSchemaState {
     FromCMDLine{cmd: String},
 
     #[state_machine_future(transitions(ConfirmQuery))]
-    ViewAffectedTuples(Query),
+    ViewAffectedTuples(QDL),
 
     #[state_machine_future(transitions(Ready))]
     ConfirmQuery(bool),
@@ -29,7 +29,23 @@ enum UpdateSchemaState {
 }
 
 impl PollUpdateSchemaState for UpdateSchemaState{
-    fn poll_get_input<'smf_poll_state,'smf_poll_context>(_: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,GetInput>) -> __smf_update_schema_state_futures::Poll<AfterGetInput,bool>  {
+    fn poll_get_input<'smf_poll_state,'smf_poll_context>(input: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,GetInput>) -> __smf_update_schema_state_futures::Poll<AfterGetInput,bool>  {
+        
+        let get_input = input.take();
+
+        let cmd = get_input.input;
+
+
+        
+        //try and compile to Query
+        // match Query::from(&cmd){
+        //     Ok(query) => {
+        //         let from_cmd = FromCMDLine {
+        //             cmd: ,
+        //         };
+        //     },
+        //     Err(_) => todo!(),
+        // }
         //check if input is file
             //send to cmd_line
         //check if input is command

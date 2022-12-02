@@ -3,6 +3,8 @@ use std::{fs::File, io::Read};
 use regex::Regex;
 use lazy_static::lazy_static;
 
+use super::sql::{SQL, SQLError};
+
 pub fn is_sql_file(file_path: &str) -> bool {
     lazy_static! {
         static ref SQL_FILE_REGEX: Regex = Regex::new(".[sS][qQ][lL]$").unwrap();
@@ -11,7 +13,7 @@ pub fn is_sql_file(file_path: &str) -> bool {
     std::path::Path::new(file_path).exists() && SQL_FILE_REGEX.is_match(file_path)
 }
 
-pub fn parse_sql_file(file_path: &str) -> Result<Vec<String>, std::io::Error> {
+pub fn parse_sql_file(file_path: &str) -> Result<Vec<SQL>, std::io::Error> {
     if !is_sql_file(file_path) {
         let _f: File = File::open(file_path)?;
     }
@@ -23,7 +25,7 @@ pub fn parse_sql_file(file_path: &str) -> Result<Vec<String>, std::io::Error> {
     let mut buffer = [0; BUFFER_SIZE];
     let mut query_cmd : String = String::from("");
 
-    let mut results: Vec<String> = Vec::new();
+    let mut results: Vec<SQL> = Vec::new();
     loop {
         match f.read(&mut buffer) {
             Ok(0) => break,
@@ -31,20 +33,23 @@ pub fn parse_sql_file(file_path: &str) -> Result<Vec<String>, std::io::Error> {
 
                 let mut buffer_iter = buffer[..n].iter();
                 while !append_to_cmd(&mut query_cmd, &mut buffer_iter) {
-                    extract_cmd(&mut query_cmd, &mut results);
+                    if let Err(err) = extract_cmd(&mut query_cmd, &mut results) {
+                        todo!();
+                    }
                 };
-                extract_cmd(&mut query_cmd, &mut results);
+                if let Err(err) = extract_cmd(&mut query_cmd, &mut results) {
+                    todo!();
+                }
             }
             Err(err) => {
                 return Err(err)
             }
         }
     }
-
     Ok(results)
 }
 
-fn extract_cmd(query_cmd: &mut String, results: &mut Vec<String>) {
+fn extract_cmd(query_cmd: &mut String, results: &mut Vec<SQL>) -> Result<(), SQLError>  {
     //remove all comments
     lazy_static! {
         static ref COMMENT_CHECK_REGEX: Regex = Regex::new("--.*\n$").unwrap();
@@ -65,9 +70,17 @@ fn extract_cmd(query_cmd: &mut String, results: &mut Vec<String>) {
 
     if CMD_END_CHECK_REGEX.is_match(query_cmd) {
         let query_cmd_tmp = CMD_END_CHECK_REGEX.replace(query_cmd, "");
-        results.push(query_cmd_tmp.to_string());
-        query_cmd.clear();
+        
+        match SQL::from(&query_cmd_tmp.to_string()) {
+            Ok(val) => {
+                results.push(val);
+                query_cmd.clear();
+                return Ok(())
+            },
+            Err(err) => return Err(err)
+        }
     }
+    return Err(SQLError::Err(String::from("Failed to parse")))
 }
 
 fn append_to_cmd<'a, I>(tmp_cmd: & mut String, buffer: &mut I) -> bool where I: Iterator<Item = &'a u8> + Sized {
