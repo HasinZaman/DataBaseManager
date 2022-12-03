@@ -156,6 +156,7 @@ pub enum SQL {
     Alter(DDL),
     Drop(DDL),
     Truncate(DDL),
+    Show(DDL),
 
     //Querying Data Language
     Select(QDL),
@@ -204,6 +205,7 @@ impl SQL {
         SQL_Parse!(Alter, DDL, "^[Aa][Ll][Tt][Ee][Rr] .+", query);
         SQL_Parse!(Drop, DDL, "^[Dd][Rr][Oo][Pp] .+", query);
         SQL_Parse!(Truncate, DDL, "^[Tt][Rr][Uu][Nn][Cc][Aa][Tt][Ee] .+", query);
+        SQL_Parse!(Show, DDL, "^[Ss][Hh][Oo][Ww] .+", query);
 
         //Querying Data Language
         SQL_Parse!(Select, QDL, "^[Ss][Ee][Ll][Ee][Cc][Tt] .+", query);
@@ -225,6 +227,7 @@ impl SQL {
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
             SQL::Drop(ddl) |
+            SQL::Show(ddl) |
             SQL::Truncate(ddl) => Some(ddl),
             _ => None,
         }
@@ -234,6 +237,7 @@ impl SQL {
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
             SQL::Drop(ddl) |
+            SQL::Show(ddl) |
             SQL::Truncate(ddl) => Some(ddl),
             _ => None,
         }
@@ -289,7 +293,8 @@ impl SQL {
             SQL::Create(_) |
             SQL::Alter(_) |
             SQL::Drop(_) | 
-            SQL::Truncate(_) => SQLLanguage::DDL,
+            SQL::Truncate(_) |
+            SQL::Show(_) => SQLLanguage::DDL,
 
             SQL::Select(_) => SQLLanguage::QDL,
 
