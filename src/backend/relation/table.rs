@@ -4,7 +4,7 @@ use core::hash::Hash;
 use mysql::{Row};
 use regex::Regex;
 
-use crate::backend::data_base::DataBase;
+use crate::backend::{data_base::DataBase, sql::SQL};
 
 /// Table struct defines the structure of a relation table
 #[derive(Clone, Debug)]
@@ -25,7 +25,7 @@ impl Table {
                 
                 //println!("{}", table_name);
                 let attr : Vec<(Option<Attribute>, bool)> = db.execute(
-                    &format!("SHOW FULL COLUMNS FROM {}", table_name),
+                    &SQL::from(&format!("SHOW FULL COLUMNS FROM {}", table_name)).unwrap(),
                     |row| {
                         match row {
                             Ok(column) => {
@@ -125,7 +125,7 @@ impl Attribute {
                         else if key == "MUL" {
                             let db = DataBase::from_env().unwrap();
 
-                            let _tmp: Vec<Constraint> = db.execute(&format!(r"SHOW CREATE TABLE `{}`;", table_name), |row| {
+                            let _tmp: Vec<Constraint> = db.execute(&SQL::from(&format!(r"SHOW CREATE TABLE `{}`;", table_name)).unwrap(), |row| {
                                 let command : String = row.unwrap().get(1).unwrap();
                                 
                                 let tag_check: Regex = Regex::new(&format!("FOREIGN KEY \\(`{}`\\) REFERENCES `([a-zA-Z0-9]+)` \\(`([a-zA-Z0-9]+)`\\)", name)).unwrap();

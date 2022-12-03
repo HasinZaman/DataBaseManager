@@ -1,6 +1,8 @@
 use std::{fmt, env::{self, VarError}};
 
-use mysql::{prelude::*, Opts, Conn, Row, Error};
+use mysql::{prelude::*, Opts, Conn, Row, Error, TxOpts};
+
+use super::sql::SQL;
 
 pub trait DatabaseExecute{
     type RowError;
@@ -54,23 +56,57 @@ impl DataBase {
 
         Conn::new(url).unwrap()
     }
-    
-    pub fn execute<E, F>(&self, command: &str, row_map: F ) -> Result<Vec<E>, Error> where F : FnMut(Result<Row, Error>) -> E{
+
+    pub fn execute<E, F>(&self, command: &SQL, row_map: F ) -> Result<Vec<E>, Error> where F : FnMut(Result<Row, Error>) -> E{
         let mut conn = self.get_conn();
 
-        let statement = conn.prep(command).unwrap();
+        let mut tx = conn.start_transaction(TxOpts::default()).unwrap();
 
-        let rows: Vec<E>;
-        match conn.exec_iter(&statement, ()){
-            Ok(iter) => {
-                rows = iter.map(row_map).collect();
-            },
-            Err(err) => return Err(err),
+        let statement = tx.prep(command.to_string()).unwrap();
+
+        let mut rows: Vec<E> = Vec::new();
+
+        let execute: Option<Error> = {
+            let execute = tx.exec_iter(&statement, ());
+
+            match execute {
+                Ok(iter) => {
+                    rows = iter.map(row_map).collect();
+                    None
+                },
+                Err(err) => Some(err),
+            }
+        };
+
+        if let Some(err) = execute {
+            let _result = tx.rollback();
+            return Err(err);
         }
 
-        let _result = conn.close(statement);
+        let _result = tx.commit();
         
         Ok(rows)
+    }
+
+    pub fn execute_multiple(&self, commands: &Vec<SQL>) -> Result<(), Error> {
+        let mut conn = self.get_conn();
+
+        let mut tx = conn.start_transaction(TxOpts::default()).unwrap();
+
+        for sql in commands{
+            let statement = tx.prep(sql.to_string()).unwrap();
+
+            if let Err(err) = tx.exec_iter(&statement, ()) {
+                //let _result = &tx.rollback();
+                return Err(err)
+            }
+            
+            let _result = tx.close(statement);
+        }
+        let _result = tx.commit();
+
+
+        Ok(())
     }
 }
 

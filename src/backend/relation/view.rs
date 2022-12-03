@@ -14,7 +14,7 @@ impl View {
         let db = DataBase::from_env().unwrap();
 
         let tmp : Vec<String> = db.execute(
-            &format!(r"SHOW CREATE TABLE {}", name),
+            &SQL::from(&format!(r"SHOW CREATE TABLE {}", name)).unwrap(),
             |row| {
                 let tmp_str: String = row.unwrap().get(1).unwrap();
 

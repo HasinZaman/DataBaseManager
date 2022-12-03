@@ -21,7 +21,7 @@ impl Relation {
         match DataBase::from_env() {
             Ok(db) => {
                 let rows: Vec<Relation> = db.execute(
-                    "SHOW FULL TABLES",
+                    &SQL::from("SHOW FULL TABLES").unwrap(),
                     |row| {
                         match row {
                             Ok(row) => {

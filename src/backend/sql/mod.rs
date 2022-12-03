@@ -37,7 +37,7 @@ impl DatabaseExecute for DDL{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&*self, row_map){
+                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -70,7 +70,7 @@ impl DatabaseExecute for QDL{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&*self, row_map){
+                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -103,7 +103,7 @@ impl DatabaseExecute for QML{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&*self, row_map){
+                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -136,7 +136,7 @@ impl DatabaseExecute for DCL{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&*self, row_map){
+                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -312,7 +312,7 @@ impl SQL {
 
         match db {
             Ok(db) => {
-                let tmp: Vec<E> = match db.execute(&self.to_string(), row_map){
+                let tmp: Vec<E> = match db.execute(&self, row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -405,6 +405,7 @@ impl DatabaseExecute for SQL{
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
             SQL::Drop(ddl) |
+            SQL::Show(ddl) |
             SQL::Truncate(ddl) => ddl.execute(row_map),
 
             SQL::Select(qdl) => qdl.execute(row_map),
@@ -425,6 +426,7 @@ impl fmt::Display for SQL {
             SQL::Create(cmd) |
             SQL::Alter(cmd) |
             SQL::Drop(cmd) | 
+            SQL::Show(cmd) |
             SQL::Truncate(cmd) => write!(f, "{}", **cmd),
 
             SQL::Select(cmd) => write!(f, "{}", **cmd),
