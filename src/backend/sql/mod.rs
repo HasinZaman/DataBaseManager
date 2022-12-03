@@ -1,4 +1,4 @@
-use std::{fmt, env::VarError, ops::{Deref, DerefMut}};
+use std::{fmt, env::VarError, ops::{Deref, DerefMut}, fs::File, io::Read};
 
 use mysql::{Error, Row};
 use regex::Regex;
@@ -319,6 +319,78 @@ impl SQL {
             }
         }
     }
+
+    pub fn from_file(file_path: &str) -> Result<Vec<SQL>, std::io::Error> {
+        let mut file: File = File::open(file_path)?;
+
+        const BUFFER_SIZE: usize = 100;
+
+        let mut buffer = [0; BUFFER_SIZE];
+        let mut cmd : String = String::from("");
+
+        let mut results: Vec<SQL> = Vec::new();
+        
+        loop {
+            match file.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(n) => {
+
+                    let buffer_iter = buffer[..n].iter();
+
+                    for c in buffer_iter {
+                        let c = *c as char;
+
+                        cmd.push(c);
+
+                        if c == '\n' {
+                            if let Err(err) = SQL::extract_cmd(&mut cmd, &mut results) {
+                            }
+                        }
+                    }
+                    if let Err(err) = SQL::extract_cmd(&mut cmd, &mut results) {
+                    }
+                }
+                Err(err) => {
+                    return Err(err)
+                }
+            }
+        }
+        Ok(results)
+    }
+
+    fn extract_cmd(query_cmd: &mut String, results: &mut Vec<SQL>) -> Result<(), SQLError>  {
+        //remove all comments
+        lazy_static! {
+            static ref COMMENT_CHECK_REGEX: Regex = Regex::new("--.*\n$").unwrap();
+        };
+        *query_cmd = COMMENT_CHECK_REGEX.replace_all(&*query_cmd, "").to_string();
+
+        //check if just bunch of \n
+        lazy_static! {
+            static ref CMD_TRIM_REGEX: Regex = Regex::new("^[\r\n\t ]+").unwrap();
+        };
+        *query_cmd = CMD_TRIM_REGEX.replace_all(&*query_cmd, "").to_string();
+
+        //check if command ends
+        lazy_static! {
+            static ref CMD_END_CHECK_REGEX: Regex = Regex::new(";\r?\n?$").unwrap();
+        };
+
+        if CMD_END_CHECK_REGEX.is_match(query_cmd) {
+            let query_cmd_tmp = CMD_END_CHECK_REGEX.replace(query_cmd, "");
+            
+            match SQL::from(&query_cmd_tmp.to_string()) {
+                Ok(val) => {
+                    results.push(val);
+                    query_cmd.clear();
+                    return Ok(())
+                },
+                Err(err) => return Err(err)
+            }
+        }
+        return Err(SQLError::Err(String::from("Failed to parse")))
+    }
+
 }
 
 impl DatabaseExecute for SQL{
@@ -364,7 +436,112 @@ impl fmt::Display for SQL {
 
 mod tests{
     use super::*;
-    //test parsing
+    use std::{fs, io::Write};
+    //extracting commands from file
+    #[test]
+    fn file_parsing_multi_line_cmd() {
+        let file_name = "file_parsing_multi_line_cmd.sql";
+        {
+            let mut file = File::create(file_name).unwrap();
+            file.write(
+                b"
+                CREATE TABLE tag ( --multi line cmd
+                    id INT AUTO_INCREMENT,
+                    colour CHAR(6),
+                    symbol VARCHAR(50) NOT NULL UNIQUE,
+                    tag_type INT NOT NULL,
+                    PRIMARY KEY(id)
+                );
+                
+                
+                SELECT \"\n\t\t\n\t\t\";--multi line but in a string
+                "
+            ).unwrap();
+        }
+
+        let actual = SQL::from_file(file_name);
+        let expected = vec![
+            SQL::from("CREATE TABLE tag (id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id))").unwrap(),
+            SQL::from("SELECT \"\n\t\t\n\t\t\"").unwrap(),
+        ];
+        assert_eq!(
+            actual.unwrap(),
+            expected
+        );
+
+        fs::remove_file(file_name).unwrap();
+    }
+
+    #[test]
+    fn file_parsing_multiple_cmds() {
+        let file_name = "file_parsing_multiple_cmds.sql";
+        {
+            let mut file = File::create(file_name).unwrap();
+            file.write(
+                b"                
+                --organizational tags\n
+                INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2);
+                INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2);
+                
+                
+                INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2);
+
+                "
+            ).unwrap();
+        }
+
+        let actual = SQL::from_file(file_name);
+        let expected = vec![
+            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
+            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2)").unwrap(),
+            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2)").unwrap(),
+        ];
+        assert_eq!(
+            actual.unwrap(),
+            expected
+        );
+
+        fs::remove_file(file_name).unwrap();
+    }
+
+    #[test]
+    fn file_insertion_1() {
+        let file_name_1 = "file_insertion_1_1.sql";
+        let file_name_2 = "file_insertion_1_2.txt";
+
+        {
+            let mut file = File::create(file_name_1).unwrap();
+            file.write(
+                &format!(
+                    "INSERT INTO tag (colour, symbol, tag_type) VALUES (\"--file:({} as S)\", \"Web\", 2);",
+                    file_name_2
+                ).as_bytes()
+            ).unwrap();
+        }
+
+        {
+            let mut file = File::create(file_name_2).unwrap();
+            file.write(
+                b"ffffff"
+            ).unwrap();
+        }
+
+        let actual = SQL::from_file(file_name_1);
+        let expected = vec![
+            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
+        ];
+
+        assert_eq!(
+            actual.unwrap(),
+            expected
+        );
+
+        fs::remove_file(file_name_1).unwrap();
+        fs::remove_file(file_name_2).unwrap();
+    }
+
+
+    //testing SQL parsing
     //Data Definition Language
     #[test]
     fn create_test_1() {
