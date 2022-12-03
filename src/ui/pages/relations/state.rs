@@ -1,31 +1,26 @@
-use std::fs::File;
-
 use state_machine_future::*;
 
-use crate::backend::sql::QDL;
+use regex::{Regex};
+use lazy_static::lazy_static;
+
+use crate::backend::{sql::{SQL}, data_base::DataBase};
 
 #[derive(StateMachineFuture)]
 enum UpdateSchemaState {
-    #[state_machine_future(start, transitions(FromFile, FromCMDLine))]
+    #[state_machine_future(start, transitions(ExecuteFile, ExecuteCMD))]
     GetInput{input: String},
 
-    #[state_machine_future(transitions(ViewAffectedTuples, ConfirmQuery))]
-    FromFile{file: File},
+    #[state_machine_future(transitions(Success))]
+    ExecuteFile{cmds: Vec<SQL>},
 
-    #[state_machine_future(transitions(ViewAffectedTuples, ConfirmQuery))]
-    FromCMDLine{cmd: String},
-
-    #[state_machine_future(transitions(ConfirmQuery))]
-    ViewAffectedTuples(QDL),
-
-    #[state_machine_future(transitions(Ready))]
-    ConfirmQuery(bool),
+    #[state_machine_future(transitions(Success))]
+    ExecuteCMD{cmd: SQL},
 
     #[state_machine_future(ready)]
-    Ready(bool),
+    Success(()),
 
     #[state_machine_future(error)]
-    Error(bool),
+    Fail(bool),
 }
 
 impl PollUpdateSchemaState for UpdateSchemaState{
@@ -33,53 +28,76 @@ impl PollUpdateSchemaState for UpdateSchemaState{
         
         let get_input = input.take();
 
-        let cmd = get_input.input;
+        let input = get_input.input;
 
 
+        lazy_static! {
+            static ref FILE_INPUT_REGEX: Regex = Regex::new("^[Ff][Ii][Ll][Ee]:[a-zA-Z][a-zA-Z0-9:/\\._]*.[Ss][Qq][Ll]$").unwrap();
+        };
+
+        let sql_cmd = SQL::from(&input);
+
+
+        if let Ok(sql_cmd) = sql_cmd {
+            //sql cmd
+            let from_cmd = ExecuteCMD {
+                cmd: sql_cmd,
+            };
+
+            transition!(from_cmd);
+        }
+        else if FILE_INPUT_REGEX.is_match(&input) {
+            //file input
+            match SQL::from_file(&input) {
+                Ok(cmds) => {
+                    let from_file = ExecuteFile {
+                        cmds: cmds,
+                    };
         
-        //try and compile to Query
-        // match Query::from(&cmd){
-        //     Ok(query) => {
-        //         let from_cmd = FromCMDLine {
-        //             cmd: ,
-        //         };
-        //     },
-        //     Err(_) => todo!(),
-        // }
-        //check if input is file
-            //send to cmd_line
-        //check if input is command
-            //send to file
-        //else
-            //send error
-        todo!()
+                    transition!(from_file);
+                },
+                Err(_) => {
+                    return Err(false);
+                },
+            }   
+        }
+        else {
+            //let err = Fail(false);
+
+            return Err(false)
+        }
     }
 
-    fn poll_from_file<'smf_poll_state,'smf_poll_context>(_: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,FromFile>) -> __smf_update_schema_state_futures::Poll<AfterFromFile,bool>  {
-        // convert queries strings into queries
-            // if fail for one querry go to error
-        // check all queries to see affected tuples
-            // if greater than 0 then go show affected tuples
-            // else go to confirm
-        todo!()
+    fn poll_execute_file<'smf_poll_state,'smf_poll_context>(cmds: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,ExecuteFile>) -> __smf_update_schema_state_futures::Poll<AfterExecuteFile,bool>  {
+        let cmds = cmds.take().cmds;
+
+        let result = DataBase::from_env()
+            .unwrap()
+            .execute_multiple(&cmds);
+
+        if let Err(_) = result {
+            return Err(false);
+        }
+
+        let finished = Success(());
+
+        transition!(finished);
     }
 
-    fn poll_from_cmd_line<'smf_poll_state,'smf_poll_context>(_: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,FromCMDLine>) -> __smf_update_schema_state_futures::Poll<AfterFromCMDLine,bool>  {
-        // Convert string query
-        // check all queries to see affected tuples
-            // if greater than 0 then go show affected tuples
-            // else go to confirm
-        todo!()
-    }
+    fn poll_execute_cmd<'smf_poll_state,'smf_poll_context>(cmd: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,ExecuteCMD>) -> __smf_update_schema_state_futures::Poll<AfterExecuteCMD,bool>  {
+        let cmd = cmd.take().cmd;
 
-    fn poll_view_affected_tuples<'smf_poll_state,'smf_poll_context>(_: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,ViewAffectedTuples>) -> __smf_update_schema_state_futures::Poll<AfterViewAffectedTuples,bool>  {
-        // show affected queries
-        // go to confirm
-        todo!()
-    }
+        let result = DataBase::from_env()
+            .unwrap()
+            .execute(&cmd, |_| ());
 
-    fn poll_confirm_query<'smf_poll_state,'smf_poll_context>(_: &'smf_poll_state mut __smf_update_schema_state_state_machine_future::RentToOwn<'smf_poll_state,ConfirmQuery>) -> __smf_update_schema_state_futures::Poll<AfterConfirmQuery,bool>  {
-        todo!()
-        // confirm or fail
+
+        if let Err(err) = result {
+            return Err(false);
+        }
+
+        let finished = Success(());
+
+        transition!(finished);
     }
 }
