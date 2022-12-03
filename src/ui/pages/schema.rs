@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 
 use tui::{Frame,backend::CrosstermBackend, layout::{Rect, Constraint}, widgets::{Table, Row, Cell, Block, Borders},};
 
-use crate::{ui::renderable::Renderable, backend::{data_base::DataBase, sql::QDL}};
+use crate::{ui::renderable::Renderable, backend::{data_base::DataBase, sql::{QDL, SQL}}};
 
 struct QueryCache{
     pub start_col: usize,
@@ -60,7 +60,7 @@ impl<'a> QueryPage<'a> {
                 let mut rows: Vec<Vec<String>> = Vec::new();
 
                 let _result: Result<Vec<Option<bool>>, _> = db.execute(
-                    &self.get_query(row_count).to_string(),
+                    &SQL::Select(self.get_query(row_count)),
                     |row| {
                         let row = row.unwrap();
 
@@ -127,7 +127,7 @@ impl<'a> QueryPage<'a> {
 
         let tmp_query = self.query.to_string();
 
-        QDL(
+        return QDL(
             match EXIST_OPERATION_REGEX.is_match(&tmp_query) {
                 true => {
                     let captures = EXIST_OPERATION_REGEX.captures(&tmp_query).unwrap();
