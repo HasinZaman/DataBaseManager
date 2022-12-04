@@ -19,7 +19,7 @@ impl View {
                 let tmp_str: String = row.unwrap().get(1).unwrap();
 
                 lazy_static! {
-                    static ref VIEW_REGEX : Regex = Regex::new("[s|S][e|E][l|L][e|E][c|C][t|T] [a-zA-Z0-9`., ()=]+").unwrap();
+                    static ref VIEW_REGEX : Regex = Regex::new("[sS][eE][lL][eE][cC][tT] [a-zA-Z0-9`., ()=]+").unwrap();
                 };
 
                 VIEW_REGEX.captures(&tmp_str)
