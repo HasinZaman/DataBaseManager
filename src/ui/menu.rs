@@ -9,7 +9,7 @@ use tui::{
 use std::fmt;
 
 /// Tab enum define all tab types
-#[derive(Clone, Copy, Debug, EnumCountMacro, EnumIter)]
+#[derive(Clone, Copy, Debug, EnumCountMacro, EnumIter, PartialEq, Eq)]
 pub enum Tab {
     Schema,
     Relation,
@@ -74,6 +74,10 @@ impl Menu {
 
         self.selected = select;
         Option::Some(&self.tabs[self.selected])
+    }
+
+    pub fn get_tab(&self) -> &Tab{
+        &self.tabs[self.selected]
     }
 }
 impl Default for Menu{
