@@ -444,14 +444,35 @@ impl fmt::Display for SQL {
 mod tests{
     use super::*;
     use std::{fs, io::Write};
+
+    struct FileEnv{
+        file_name: String
+    }
+
+    impl FileEnv{
+        pub fn new(file_name: &str, content: &str) -> FileEnv {
+
+            let mut file = File::create(&file_name).unwrap();
+            file.write(&content.as_bytes()).unwrap();
+
+            FileEnv{ file_name: file_name.to_string() }
+        }
+    }
+
+    impl Drop for FileEnv{
+        fn drop(&mut self) {
+            println!("Dropping {}", &self.file_name);
+            fs::remove_file(&self.file_name).unwrap();
+        }
+    }
+
     //extracting commands from file
     #[test]
     fn file_parsing_multi_line_cmd() {
         let file_name = "file_parsing_multi_line_cmd.sql";
-        {
-            let mut file = File::create(file_name).unwrap();
-            file.write(
-                b"
+        let _file = FileEnv::new(
+            file_name,
+            "
                 CREATE TABLE tag ( --multi line cmd
                     id INT AUTO_INCREMENT,
                     colour CHAR(6),
@@ -462,9 +483,8 @@ mod tests{
                 
                 
                 SELECT \"\n\t\t\n\t\t\";--multi line but in a string
-                "
-            ).unwrap();
-        }
+            "
+        );
 
         let actual = SQL::from_file(file_name);
         let expected = vec![
@@ -475,29 +495,26 @@ mod tests{
             actual.unwrap(),
             expected
         );
-
-        fs::remove_file(file_name).unwrap();
     }
 
     #[test]
     fn file_parsing_multiple_cmds() {
-        let file_name = "file_parsing_multiple_cmds.sql";
-        {
-            let mut file = File::create(file_name).unwrap();
-            file.write(
-                b"                
-                --organizational tags\n
-                INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2);
-                INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2);
-                
-                
-                INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2);
 
-                "
-            ).unwrap();
-        }
+        let file_path = "file_parsing_multiple_cmds.sql";
+        let _file = FileEnv::new(
+            file_path,
+            "                
+            --organizational tags\n
+            INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2);
+            INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2);
+            
+            
+            INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2);
 
-        let actual = SQL::from_file(file_name);
+            "
+        );
+
+        let actual = SQL::from_file(file_path);
         let expected = vec![
             SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
             SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2)").unwrap(),
@@ -507,8 +524,6 @@ mod tests{
             actual.unwrap(),
             expected
         );
-
-        fs::remove_file(file_name).unwrap();
     }
 
     #[test]
@@ -516,23 +531,18 @@ mod tests{
         let file_name_1 = "file_insertion_1_1.sql";
         let file_name_2 = "file_insertion_1_2.txt";
 
-        {
-            let mut file = File::create(file_name_1).unwrap();
-            file.write(
-                &format!(
-                    "INSERT INTO tag (colour, symbol, tag_type) VALUES (\"--file:({} as S)\", \"Web\", 2);",
-                    file_name_2
-                ).as_bytes()
-            ).unwrap();
-        }
-
-        {
-            let mut file = File::create(file_name_2).unwrap();
-            file.write(
-                b"ffffff"
-            ).unwrap();
-        }
-
+        let _file_1 = FileEnv::new(
+            file_name_1,
+            &format!(
+                "INSERT INTO tag (colour, symbol, tag_type) VALUES (\"--file:({} as S)\", \"Web\", 2);",
+                file_name_2
+            )
+        );
+        let _file_2 = FileEnv::new(
+            file_name_2,
+            "ffffff"
+        );
+        
         let actual = SQL::from_file(file_name_1);
         let expected = vec![
             SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
@@ -542,9 +552,6 @@ mod tests{
             actual.unwrap(),
             expected
         );
-
-        fs::remove_file(file_name_1).unwrap();
-        fs::remove_file(file_name_2).unwrap();
     }
 
 
