@@ -23,6 +23,3 @@ time = {version = "*", features = ["serde", "macros"] }
 
 ron = "0.8"
 serde = { version = "1", features = ["derive"] }
-
-state_machine_future = "0.2.0"
-futures = "*"
