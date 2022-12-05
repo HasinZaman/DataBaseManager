@@ -1,273 +1,136 @@
-use std::{thread, time::Duration, collections::HashSet};
-use tui::{
-    layout::{Layout, Direction, Constraint}
-};
+use std::{io::Stdout, sync::Mutex};
 
-use crossterm::{
-    execute, terminal::{LeaveAlternateScreen}
-};
-use ui::{menu::Menu, renderable::Renderable, gen_terminal, input::Input};
+use regex::Regex;
+use lazy_static::lazy_static;
 
-use crate::{backend::{relation::{Relation, table::{Table, Attribute, AttributeType, Constraint as TableConstraint}}, query::Query}, ui::pages::relations::{relation_list::RelationListPage, relation_page::RelationPage}};
+use backend::relation::Relation;
+use crossterm::event::{self, Event};
+use tui::{Terminal, backend::{CrosstermBackend}, layout::{Layout, Direction, Constraint}};
+use ui::{input::Input, gen_terminal, menu::Menu, renderable::Renderable, pages::{relations::{relation_list::RelationListPage, relation_page::RelationPage}, snapshot::SnapShotPage}};
+
+use crate::ui::pages::Pages;
 
 pub mod ui;
 pub mod backend;
+
+lazy_static!{
+    static ref RELATIONS: Mutex<Vec<Relation>> = Mutex::new(Relation::get_relations().unwrap());
+}
+lazy_static!(
+    static ref LAST_PAGE: Mutex<Pages> = Mutex::new(
+        Pages::RelationList(
+            RelationListPage::from(
+                &RELATIONS.lock().unwrap()
+            )
+        )
+    );
+);
 
 fn main() {
     let mut terminal = gen_terminal();
     let _result= terminal.show_cursor();
 
-    let str_tmp = String::from("HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD - HELLO WORLD");
-    
-    let mut input = Input::from(
-        String::from(""),
-        Some(String::from("prompt")),
-        true
-    );
+    let mut input = Input::default();
+    let mut menu = Menu::default();
 
-    let mut relations = vec![
-        Relation::Table(
-            Table {
-                name: String::from("Tag"),
-                attributes: vec![
-                    Attribute{
-                        name: String::from("id"),
-                        data_type: AttributeType::Int(8),
-                        constraint: HashSet::new(),
-                    },
-                    Attribute{
-                        name: String::from("col"),
-                        data_type: AttributeType::Char(6),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                    Attribute{
-                        name: String::from("name"),
-                        data_type: AttributeType::VarChar(50),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                    Attribute {
-                        name: String::from("tag_type"),
-                        data_type: AttributeType::Int(8),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                ],
-                primary_key: Some(0),
-            },
-        ),
-        Relation::Table(
-            Table {
-                name: String::from("Related"),
-                attributes: vec![
-                    Attribute{
-                        name: String::from("tag_1"),
-                        data_type: AttributeType::Int(8),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(
-                                TableConstraint::ForeignKey{
-                                    table_name: String::from("Tag"),
-                                    attribute_name: String::from("id")
-                                }
-                            );
-
-                            tmp
-                        },
-                    },
-                    Attribute{
-                        name: String::from("tag_2"),
-                        data_type: AttributeType::Int(8),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(
-                                TableConstraint::ForeignKey{
-                                    table_name: String::from("Tag"),
-                                    attribute_name: String::from("id")
-                                }
-                            );
-
-                            tmp
-                        },
-                    },
-                ],
-                primary_key: None,
-            },
-        ),
-        Relation::Table(
-            Table {
-                name: String::from("Project"),
-                attributes: vec![
-                    Attribute{
-                        name: String::from("repo"),
-                        data_type: AttributeType::VarChar(50),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                    Attribute{
-                        name: String::from("start"),
-                        data_type: AttributeType::TimeStamp,
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                    Attribute{
-                        name: String::from("update"),
-                        data_type: AttributeType::TimeStamp,
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                ],
-                primary_key: None,
-            },
-        ),
-        Relation::Table(
-            Table {
-                name: String::from("Dev_log"),
-                attributes: vec![
-                    Attribute{
-                        name: String::from("timestamp"),
-                        data_type: AttributeType::TimeStamp,
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                    Attribute{
-                        name: String::from("content"),
-                        data_type: AttributeType::Text(100),
-                        constraint: {
-                            let mut tmp: HashSet<TableConstraint> = HashSet::new();
-                            tmp.insert(TableConstraint::NotNull);
-
-                            tmp
-                        },
-                    },
-                ],
-                primary_key: None,
-            },
-        ),
-    ];
-
-    let relation_list : RelationListPage = RelationListPage::from(&relations);
-
-    let relation_page: RelationPage = RelationPage::new(&relations[1]);
-
-    for x in 0..str_tmp.len(){
-        let _result = terminal.draw(|f| {
-            let size = f.size();
-            
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)].as_ref())
-                .split(size);
-    
-            let mut _menu = Menu::default();
-    
-            let tmp: Vec<char> = str_tmp.clone().chars().collect();
-            input.add_char(tmp.get(x).unwrap().clone());
-            
-            _menu.render(chunks.get(0).unwrap().clone(), f);
-            relation_list.render(chunks.get(1).unwrap().clone(), f);
-            //relation_page.render(chunks.get(1).unwrap().clone(), f);
-            input.render(chunks.get(2).unwrap().clone(), f);
-        });
-        
-        thread::sleep(Duration::from_millis(50));
+    update_terminal(&mut terminal, &menu, &LAST_PAGE.lock().unwrap(), &input);
+    loop {
+        if let Ok(Event::Key(event)) = event::read() {
+            if let Some(cmd) = input.from_event(event) {
+                get_cmd(cmd, &mut menu);
+            }
+            update_terminal(&mut terminal, &menu, &LAST_PAGE.lock().unwrap(), &input);
+        }
     }
+}
 
-    for x in 0..str_tmp.len(){
-        let _result = terminal.draw(|f| {
-            let size = f.size();
-            
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)].as_ref())
-                .split(size);
-    
-            let mut _menu = Menu::default();
-    
-            let tmp: Vec<char> = str_tmp.clone().chars().collect();
-            input.add_char(tmp.get(x).unwrap().clone());
-            
-            _menu.render(chunks.get(0).unwrap().clone(), f);
-            relation_list.render(chunks.get(1).unwrap().clone(), f);
-            //relation_page.render(chunks.get(1).unwrap().clone(), f);
-            input.render(chunks.get(2).unwrap().clone(), f);
-        });
+fn update_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>, menu: &Menu, page_content: &Pages, input: &Input ) {
+    let _result = terminal.draw(|f| {
+        let size = f.size();
         
-        thread::sleep(Duration::from_millis(50));
-    }
-    /*for _x in 0..str_tmp.len()/2{
-        let _result = terminal.draw(|f| {
-            let size = f.size();
-    
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)].as_ref())
-                .split(size);
-    
-            let mut _menu = Menu::default();
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)].as_ref())
+            .split(size);
 
-            input.cursor_left(1);
-            
-            _menu.render(chunks.get(0).unwrap().clone(), f);
-            relation_list.render(chunks.get(1).unwrap().clone(), f);
-            input.render(chunks.get(2).unwrap().clone(), f);
-        });
         
-        thread::sleep(Duration::from_millis(50));
-    }
-    for _x in 0..str_tmp.len()/2{
-        let _result = terminal.draw(|f| {
-            let size = f.size();
-    
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)].as_ref())
-                .split(size);
-    
-            let mut _menu = Menu::default();
+        menu.render(chunks.get(0).unwrap().clone(), f);
+        page_content.render(chunks.get(1).unwrap().clone(), f);
+        input.render(chunks.get(2).unwrap().clone(), f);
+    });
+}
 
-            input.del_char();
+fn get_cmd(cmd: String, menu: &mut Menu) {
+    lazy_static!{
+        static ref SCHEMA_TAB : Regex = Regex::new("[Ss][Hh][Oo][Ww] (.+)").unwrap();
+    };
+    if SCHEMA_TAB.is_match(&cmd) {
+        let capture = SCHEMA_TAB.captures(&cmd).unwrap().get(1).unwrap().as_str();
+        let relations = RELATIONS.lock().unwrap();
+
+        menu.select(0).unwrap();
+
+        lazy_static!{
+            static ref ALL_SCHEMA : Regex = Regex::new("^\\*$").unwrap();
+        };
+        lazy_static!{
+            static ref ALL_TABLES : Regex = Regex::new("^[Tt][Aa][Bb][Ll][Ee][Ss]$").unwrap();
+        };
+        lazy_static!{
+            static ref ALL_VIEWS : Regex = Regex::new("^[Vv][Ii][Ee][Ww][Ss]$").unwrap();
+        };
+
+        if ALL_SCHEMA.is_match(capture) {
+            //println!("All tarbles");
+            let mut last_page = LAST_PAGE.lock().unwrap();
+            *last_page = Pages::RelationList(RelationListPage::from(&relations));
+        }
+        else if ALL_TABLES.is_match(capture) {
+            let relations: Vec<Relation> = relations.iter()
+                .filter(
+                    |relation| {
+                    match relation{
+                        Relation::Table(_) => true,
+                        Relation::View(_) => false,
+                    }
+                })
+                .map(|relation| relation.clone())
+                .collect();
             
-            _menu.render(chunks.get(0).unwrap().clone(), f);
-            relation_list.render(chunks.get(1).unwrap().clone(), f);
-            input.render(chunks.get(2).unwrap().clone(), f);
-        });
-        
-        thread::sleep(Duration::from_millis(50));
+            let mut last_page = LAST_PAGE.lock().unwrap();
+            *last_page = Pages::RelationList(RelationListPage::from(&relations));
+        }
+        else if ALL_VIEWS.is_match(capture) {
+            let relations: Vec<Relation> = relations.iter()
+                .filter(
+                    |relation| {
+                    match relation{
+                        Relation::Table(_) => false,
+                        Relation::View(_) => true,
+                    }
+                })
+                .map(|relation| relation.clone())
+                .collect();
+            
+            let mut last_page = LAST_PAGE.lock().unwrap();
+            *last_page = Pages::RelationList(RelationListPage::from(&relations));
+        }
+        else {
+            let relations: Vec<Relation> = relations.iter()
+                .map(
+                    |relation| relation.name()
+                ).enumerate()
+                .filter(|(_index, relation)| relation == capture)
+                .map(|(index, _relation)| relations[index].clone())
+                .collect();
+            
+            if relations.len() == 1 {
+                let mut last_page = LAST_PAGE.lock().unwrap();
+                *last_page = Pages::Relation(RelationPage::new(&relations[0]));
+            }
+        }
     }
-    */
-    thread::sleep(Duration::from_millis(2500));
-
-    let _result = execute!(terminal.backend_mut(), LeaveAlternateScreen);
-
-    println!("{}", input);
+    //select * -> straight to relation
+    //else do schema specific commands
+    
 }
