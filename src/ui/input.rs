@@ -1,6 +1,7 @@
-use std::{fmt, cmp::min};
+use std::{fmt::{self, Debug}, cmp::min};
 
 use tui::{widgets::{Block, Borders, Paragraph}, text::Spans};
+use crossterm::event::{KeyEvent, KeyCode, KeyEventKind};
 
 use super::renderable::Renderable;
 
@@ -11,7 +12,7 @@ pub enum InputErr{
 }
 
 /// Input struct defines the state required to maintain a text input section
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Input{
     content: Vec<char>,
     pub prompt: Option<String>,
@@ -101,6 +102,38 @@ impl Input {
         }
         self
     }
+
+    pub fn from_event(&mut self, event: KeyEvent) -> Option<String> {
+        match event {
+            KeyEvent{code: KeyCode::Backspace, kind: KeyEventKind::Press, ..} => {
+                self.del_char();
+            },
+            KeyEvent{code: KeyCode::Enter, kind: KeyEventKind::Press, ..} => {
+                let str: String = self.content.iter().collect();
+                self.clear();
+                return Some(str)
+            },
+            KeyEvent{code: KeyCode::Left, kind: KeyEventKind::Press, ..} => {
+                self.cursor_left(1);
+            },
+            KeyEvent{code: KeyCode::Right, kind: KeyEventKind::Press, ..} => {
+                self.cursor_right(1);
+            },
+            KeyEvent{code: KeyCode::Delete, kind: KeyEventKind::Press, ..} => {
+                if self.cursor < self.content.len() {
+                    self.cursor_right(1).del_char();
+                }
+            },
+            // KeyEvent{code: KeyCode::F(u8), kind: KeyEventKind::Press, ..} => {
+            //     self.add_char(u8 as char);
+            // },
+            KeyEvent{code: KeyCode::Char(char), kind: KeyEventKind::Press, ..} => {
+                self.add_char(char);
+            },
+            _ => {}
+        }
+        None
+    }
 }
 impl Default for Input{
     fn default() -> Input {
@@ -111,10 +144,13 @@ impl fmt::Display for Input {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let input_str: String = self.content.iter().collect();
 
-        match &self.prompt {
-            Some(val) => write!(f, "{:?} - \"{}\"\tcursor:{}", val, input_str, self.cursor),
-            None => write!(f, "\"{}\"\tcursor:{}", input_str, self.cursor),
-        }
+        let (input_str_1,input_str_2) =input_str.split_at(self.cursor);
+
+        write!(f,"{}|{}", input_str_1, input_str_2)
+        // match &self.prompt {
+        //     Some(val) => write!(f, "{:?} - \"{}\"\tcursor:{}", val, input_str, self.cursor),
+        //     None => write!(f, "\"{}\"\tcursor:{}", input_str, self.cursor),
+        // }
     }
 }
 
@@ -145,40 +181,18 @@ impl Renderable for Input{
                     {
                         let max_char: usize = text_area.width as usize - 1;
 
-                        let content = self.content.clone();
+                        let content = self.to_string();
 
-                        if self.content.len() < self.cursor {
-                            panic!("Invalid cursor position");
-                        }
+                        let content_str : &str;
 
-                        let content_str: String;
-
-                        if content.len() < max_char {
-                            content_str = content.iter()
-                                .skip(0)
-                                .take(self.cursor)
-                                .collect();
-
-                            frame.set_cursor(text_area.x + self.cursor as u16, text_area.y);
-                        }
-                        else if self.cursor <= max_char {
-                            content_str = content.iter()
-                                .skip(0)
-                                .take(max_char)
-                                .collect();
-
-                            frame.set_cursor(text_area.x + text_area.width - 1 as u16, text_area.y);
+                        if content.len() > max_char && self.cursor > max_char {
+                            content_str = &content[(self.cursor-max_char-1)..self.cursor];
                         }
                         else {
-                            let tmp_content_str : String = content.iter()
-                                .skip(self.cursor - max_char)
-                                .take(max_char)
-                                .collect();
-                            
-                            content_str = format!("<{}", tmp_content_str);
+                            content_str = &content;
                         }
 
-                        Spans::from(content_str)
+                        Spans::from(content_str.to_string())
                     }
                     
                 ]
@@ -432,22 +446,37 @@ mod tests{
         let mut actual = Input::from(String::from(""), None, true);
 
         assert_eq!(
-            "\"\"\tcursor:0",
-            actual.to_string()
+            Input{ 
+                content: vec![],
+                prompt: None,
+                cursor: 0,
+                input_cond: true
+            },
+            actual
         );
 
         actual.add_char('a');
 
         assert_eq!(
-            "\"a\"\tcursor:1",
-            actual.to_string()
+            Input{ 
+                content: vec!['a'],
+                prompt: None,
+                cursor: 1,
+                input_cond: true
+            },
+            actual
         );
 
         actual.add_char('a').add_char('a');
 
         assert_eq!(
-            "\"aaa\"\tcursor:3",
-            actual.to_string()
+            Input{ 
+                content: vec!['a','a','a'],
+                prompt: None,
+                cursor: 3,
+                input_cond: true
+            },
+            actual
         );
 
         actual.add_char('a')
@@ -455,8 +484,13 @@ mod tests{
             .add_char('b');
 
         assert_eq!(
-            "\"aabaa\"\tcursor:3",
-            actual.to_string()
+            Input{ 
+                content: vec!['a','a','b','a','a'],
+                prompt: None,
+                cursor: 3,
+                input_cond: true
+            },
+            actual
         );
 
         actual.cursor_left(3)
@@ -465,16 +499,26 @@ mod tests{
             .add_char('d');
 
         assert_eq!(
-            "\"dcaabaa\"\tcursor:1",
-            actual.to_string()
+            Input{ 
+                content: vec!['d','c','a','a','b','a','a'],
+                prompt: None,
+                cursor: 1,
+                input_cond: true
+            },
+            actual
         );
 
         actual.input_cond = false;
         actual.add_char('e');
 
         assert_eq!(
-            "\"dcaabaa\"\tcursor:1",
-            actual.to_string()
+            Input{ 
+                content: vec!['d','c','a','a','b','a','a'],
+                prompt: None,
+                cursor: 1,
+                input_cond: false
+            },
+            actual
         );
     }
 
@@ -483,45 +527,80 @@ mod tests{
         let mut actual = Input::from(String::from("123456"), None, true);
 
         assert_eq!(
-            "\"123456\"\tcursor:6",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','2','3','4','5','6'],
+                prompt: None,
+                cursor: 6,
+                input_cond: true
+            },
+            actual
         );
 
         actual.del_char();
         assert_eq!(
-            "\"12345\"\tcursor:5",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','2','3','4','5'],
+                prompt: None,
+                cursor: 5,
+                input_cond: true
+            },
+            actual
         );
 
         actual.del_char();
         assert_eq!(
-            "\"1234\"\tcursor:4",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','2','3','4'],
+                prompt: None,
+                cursor: 4,
+                input_cond: true
+            },
+            actual
         );
 
         actual.cursor_left(2).del_char();
         assert_eq!(
-            "\"134\"\tcursor:1",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','3','4'],
+                prompt: None,
+                cursor: 1,
+                input_cond: true
+            },
+            actual
         );
         
         actual.cursor_left(2).del_char();
         assert_eq!(
-            "\"134\"\tcursor:0",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','3','4'],
+                prompt: None,
+                cursor: 0,
+                input_cond: true
+            },
+            actual
         );
         
         actual.cursor_right(2).del_char();
         assert_eq!(
-            "\"14\"\tcursor:1",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','4'],
+                prompt: None,
+                cursor: 1,
+                input_cond: true
+            },
+            actual
         );
 
         actual.input_cond = false;
         actual.del_char();
         assert_eq!(
-            "\"14\"\tcursor:1",
-            actual.to_string()
+            Input{ 
+                content: vec!['1','4'],
+                prompt: None,
+                cursor: 1,
+                input_cond: false
+            },
+            actual
         );
     }
 }
