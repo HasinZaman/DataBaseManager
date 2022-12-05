@@ -13,16 +13,16 @@ struct QueryCache{
     pub rows: Vec<Vec<String>>
 }
 
-pub struct QueryPage<'a>{
-    query: &'a QDL,
+pub struct QueryPage{
+    query: QDL,
     query_offset: usize,
     query_cache: QueryCache
 }
 
-impl<'a> QueryPage<'a> {
-    pub fn new(query: &'a QDL) -> QueryPage<'a> {
+impl QueryPage {
+    pub fn new(query: &QDL) -> QueryPage {
         QueryPage {
-            query: query,
+            query: query.clone(),
             query_offset: 0,
             query_cache: QueryCache {
                 start_col: 0,
@@ -164,7 +164,7 @@ impl<'a> QueryPage<'a> {
     }
 }
 
-impl<'a> Renderable for QueryPage<'a>{
+impl Renderable for QueryPage{
     fn render<T: std::io::Write>(&self, display_area: Rect, frame: &mut Frame<CrosstermBackend<T>>) {
         let height: usize = (display_area.height - 2 - 1) as usize; 
 
