@@ -3,18 +3,18 @@ use tui::{layout::Rect, Frame, backend::CrosstermBackend, text::{Spans, Span}, w
 use crate::{backend::relation::{Relation}, ui::renderable::Renderable};
 
 /// RelationPage struct handles the state required in order render a single relation
-pub struct RelationPage<'a>{
-    pub relation: &'a Relation
+pub struct RelationPage{
+    pub relation: Relation
 }
 
-impl <'a>RelationPage<'a> {
+impl RelationPage {
     /// new associative function initializes RelationPage
-    pub fn new(relation: &'a Relation) -> RelationPage<'a> {
-        RelationPage{ relation: relation }
+    pub fn new(relation: &Relation) -> RelationPage{
+        RelationPage{ relation: relation.clone() }
     }
 }
 
-impl <'a>Renderable for RelationPage<'a>{
+impl Renderable for RelationPage{
     fn render<T: std::io::Write>(&self, display_area: Rect, frame: &mut Frame<CrosstermBackend<T>>) {
         let lines : Vec<Spans> = {
             vec![
@@ -22,7 +22,7 @@ impl <'a>Renderable for RelationPage<'a>{
                 vec![Spans::from(self.relation.name())],
 
                 //define relation definition lines
-                match self.relation {
+                match &self.relation {
                     Relation::Table(table) => {
                         table.attributes
                             .iter()
