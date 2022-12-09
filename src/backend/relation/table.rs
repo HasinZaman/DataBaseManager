@@ -71,6 +71,35 @@ impl Table {
             }
         }
     }
+
+    pub fn get_foreign_keys(&self) -> Option<Vec<(String, String)>> {
+
+        let foreign_key: Vec<(String, String)> = self.attributes
+            .iter()
+            .filter(|a| {//filter out all attributes without foreign key constraint
+                for constraint in &a.constraint{
+                    if let Constraint::ForeignKey { .. } = constraint {
+                        return true
+                    }
+                }
+                return false
+            })
+            .map(|a| {//turn a into foreign key
+                for constraint in &a.constraint{
+                    if let Constraint::ForeignKey { table_name, attribute_name  } = constraint {
+                        return (table_name.clone(), attribute_name.clone())
+                    }
+                }
+                panic!()
+            })
+            .collect();
+
+        if foreign_key.len() == 0 {
+            return None
+        }
+
+        Some(foreign_key)
+    }
 }
 
 /// Attribute defines the columns of a Table

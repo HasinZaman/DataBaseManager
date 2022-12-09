@@ -23,3 +23,5 @@ time = {version = "*", features = ["serde", "macros"] }
 
 ron = "0.8"
 serde = { version = "1", features = ["derive"] }
+
+petgraph = "0.6.*"

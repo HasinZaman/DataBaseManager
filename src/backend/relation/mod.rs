@@ -8,6 +8,7 @@ use super::sql::{SQL};
 
 pub mod table;
 pub mod view;
+pub mod paths;
 
 //Relation Defines the two relations that can exist in a MySql database
 #[derive(Clone, Debug)]
@@ -82,4 +83,6 @@ impl Relation {
     pub fn select(&self) -> SQL {
         SQL::from(&format!("SELECT * FROM {}", self.name())).unwrap()
     }
+
+    
 }
