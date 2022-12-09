@@ -7,12 +7,14 @@ use tui::{Frame,backend::CrosstermBackend, layout::{Rect, Constraint}, widgets::
 
 use crate::{ui::renderable::Renderable, backend::{data_base::DataBase, sql::{QDL, SQL}}};
 
+#[derive(Clone)]
 struct QueryCache{
     pub start_col: usize,
     pub columns: Vec<(String, usize)>,
     pub rows: Vec<Vec<String>>
 }
 
+#[derive(Clone)]
 pub struct QueryPage{
     query: QDL,
     query_offset: usize,
