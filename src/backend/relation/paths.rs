@@ -10,7 +10,7 @@ pub type DependencyGraph = Graph<NodeIndex, NodeIndex>;
 
 pub fn get_dependency_graph(relations: &Vec<Relation>) -> DependencyGraph {
     let name_to_index: HashMap<String, usize> = name_to_index_hashmap(relations);
-    let mut index_to_NodeIndex: HashMap<usize, NodeIndex> = HashMap::new();
+    let mut index_to_node_index: HashMap<usize, NodeIndex> = HashMap::new();
 
     let mut dependency_tree: DependencyGraph = Graph::new();
 
@@ -22,7 +22,7 @@ pub fn get_dependency_graph(relations: &Vec<Relation>) -> DependencyGraph {
         .for_each(|(index, r)| {
             let tmp = dependency_tree.add_node(index as u32).index();
 
-            index_to_NodeIndex.insert(
+            index_to_node_index.insert(
                 index, 
                 tmp.try_into().unwrap()
             );
@@ -35,8 +35,8 @@ pub fn get_dependency_graph(relations: &Vec<Relation>) -> DependencyGraph {
         edges.iter()
             .map(|(i1, i2)| {
                 (
-                    *index_to_NodeIndex.get(i1).unwrap(),
-                    *index_to_NodeIndex.get(i2).unwrap(),
+                    *index_to_node_index.get(i1).unwrap(),
+                    *index_to_node_index.get(i2).unwrap(),
                 )
             })
             .collect()
