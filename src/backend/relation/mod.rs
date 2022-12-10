@@ -84,5 +84,10 @@ impl Relation {
         SQL::from(&format!("SELECT * FROM {}", self.name())).unwrap()
     }
 
-    
+    pub fn create(&self) -> SQL {
+        match self {
+            Relation::Table(table) => table.create(),
+            Relation::View(view) => SQL::from(&format!("CREATE VIEW {} AS {}", &self.name(), &*view.query)).unwrap(),
+        }
+    }
 }

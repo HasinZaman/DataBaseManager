@@ -1,4 +1,4 @@
-use std::{fmt, collections::HashSet};
+use std::{fmt::{self, Display}, collections::HashSet};
 use core::hash::Hash;
 
 use mysql::{Row};
@@ -100,6 +100,32 @@ impl Table {
 
         Some(foreign_key)
     }
+
+    pub fn create(&self) -> SQL{
+        SQL::from(&self.to_string()).unwrap()
+    }
+}
+
+impl Display for Table {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let attr : Vec<String> = self.attributes
+            .iter()
+            .map(|attr| {
+                attr.to_string() 
+            })
+            .collect();
+        
+        let attr = attr.join(",");
+
+        match self.primary_key {
+            Some(index) => {
+                let primary_key = &self.attributes[index].name;
+
+                write!(f, "CREATE TABLE {} ({}, PRIMARY KEY({}))", self.name, attr, primary_key)
+            },
+            None => write!(f, "CREATE TABLE {} ({})", self.name, attr),
+        }
+    }
 }
 
 /// Attribute defines the columns of a Table
@@ -183,7 +209,29 @@ impl Attribute {
 
 impl fmt::Display for Attribute {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.name, self.data_type)
+        let mut foreign_key = None;
+        let constraint_str: String = {
+            let mut constraints_vec: Vec<String> = Vec::new();
+            for c in &self.constraint {
+                if let Constraint::ForeignKey { .. } = c {
+                    foreign_key = Some(format!("FOREIGN KEY({}) REFERENCES {}", self.name, c.to_string()));
+                    continue;
+                }
+
+                constraints_vec.push(c.to_string());
+            }
+
+            constraints_vec.join(" ")
+        };
+        let tmp = match constraint_str.len() {
+            0 => format!("{} {}", self.name, self.data_type),
+            _ => format!("{} {} {}", self.name, self.data_type, constraint_str),
+        };
+
+        match foreign_key {
+            Some(foreign_key) => write!(f, "{}, {}", tmp, foreign_key),
+            None => write!(f, "{}", tmp),
+        }
     }
 }
 
@@ -216,7 +264,7 @@ impl fmt::Display for Constraint{
         match self {
             Constraint::NotNull => write!(f, "Not Null"),
             Constraint::Unique => write!(f, "Unique"),
-            Constraint::ForeignKey{table_name: table,attribute_name: attr} => write!(f, "FOREIGN KEY REFERENCES {}({})", table, attr),
+            Constraint::ForeignKey{table_name: table,attribute_name: attr} => write!(f, "{}({})", table, attr),
             Constraint::AutoIncrement => write!(f, "Auto Increment"),
         }
     }
@@ -381,5 +429,50 @@ impl fmt::Display for AttributeType{
             AttributeType::Time => write!(f, "Time"),
             AttributeType::Year => write!(f, "Year"),
         }
+    }
+}
+
+mod tests {
+    use std::collections::HashSet;
+
+    use super::{Table, Attribute, AttributeType, Constraint};
+
+    #[test]
+    fn table_to_string_test_1() {
+        let table = Table{
+            name: String::from("table_1"),
+            attributes: vec![
+                Attribute{
+                    name: String::from("attr_1"),
+                    data_type: AttributeType::Text(10),
+                    constraint: HashSet::from(
+                        [
+                            Constraint::NotNull,
+                            Constraint::Unique
+                        ]
+                    )
+                }
+            ],
+            primary_key: Some(0),
+        };
+
+        assert_eq!(table.to_string(), "CREATE TABLE table_1 (attr_1 text(10) Unique Not Null, PRIMARY KEY(attr_1))")
+    }
+
+    #[test]
+    fn table_to_string_test_2() {
+        let table = Table{
+            name: String::from("table_1"),
+            attributes: vec![
+                Attribute{
+                    name: String::from("attr_1"),
+                    data_type: AttributeType::Text(10),
+                    constraint: HashSet::new()
+                }
+            ],
+            primary_key: Some(0),
+        };
+
+        assert_eq!(table.to_string(), "CREATE TABLE table_1 (attr_1 text(10), PRIMARY KEY(attr_1))")
     }
 }
