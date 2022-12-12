@@ -76,7 +76,7 @@ impl QueryPage {
                     .enumerate()
                     .map(|(i1, (val, col))| (i1, val, col))
                     .for_each(|(i1, val, col)| {
-                        let val = format!("{:?}", val);
+                        let val = format!("{}", val.as_sql(true));
 
                         match columns.get(i1) {
                             Some((_name, max_size)) => {
