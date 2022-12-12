@@ -205,6 +205,10 @@ impl Attribute {
             }
         )
     }
+
+    pub fn schema_fmt(&self) -> String {
+        format!("{} {}", self.name, self.data_type)
+    }
 }
 
 impl fmt::Display for Attribute {
@@ -475,4 +479,6 @@ mod tests {
 
         assert_eq!(table.to_string(), "CREATE TABLE table_1 (attr_1 text(10), PRIMARY KEY(attr_1))")
     }
+
+    //do more tests
 }

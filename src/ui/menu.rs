@@ -12,14 +12,14 @@ use std::fmt;
 #[derive(Clone, Copy, Debug, EnumCountMacro, EnumIter, PartialEq, Eq)]
 pub enum Tab {
     Schema,
-    Relation,
+    Query,
     SnapShot
 }
 impl fmt::Display for Tab {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Tab::Schema => write!(f, "Schema"),
-            Tab::Relation => write!(f, "Relation"),
+            Tab::Query => write!(f, "Query"),
             Tab::SnapShot => write!(f, "SnapShot"),
         }
     }
@@ -41,7 +41,7 @@ impl Menu {
         Menu {
             tabs: [
                 Tab::Schema,
-                Tab::Relation,
+                Tab::Query,
                 Tab::SnapShot
             ],
             selected: selected

@@ -6,9 +6,9 @@ use lazy_static::lazy_static;
 use backend::relation::Relation;
 use crossterm::event::{self, Event};
 use tui::{Terminal, backend::{CrosstermBackend}, layout::{Layout, Direction, Constraint}};
-use ui::{input::Input, gen_terminal, menu::Menu, renderable::Renderable, pages::{relations::{relation_list::RelationListPage, relation_page::RelationPage}, snapshot::SnapShotPage}};
+use ui::{input::Input, gen_terminal, menu::Menu, renderable::Renderable, pages::{schema::{relation_list::RelationListPage, relation_page::RelationPage}, snapshot::SnapShotPage}};
 
-use crate::{ui::pages::{Pages, schema::QueryPage}, backend::{sql::SQL, data_base::DatabaseExecute}};
+use crate::{ui::pages::{Pages, query::QueryPage}, backend::{sql::SQL, data_base::DatabaseExecute}};
 
 pub mod ui;
 pub mod backend;
@@ -165,7 +165,7 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
             ui::menu::Tab::Schema => {
                 //no
             },
-            ui::menu::Tab::Relation => {
+            ui::menu::Tab::Query => {
                 let mut last_page = LAST_PAGE.lock().unwrap();
 
                 match &*last_page {

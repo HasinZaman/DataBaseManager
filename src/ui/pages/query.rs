@@ -1,11 +1,11 @@
-use std::cmp::{max, min};
+use std::{cmp::{max, min}};
 
 use regex::{Regex, Captures};
 use lazy_static::lazy_static;
 
 use tui::{Frame,backend::CrosstermBackend, layout::{Rect, Constraint}, widgets::{Table, Row, Cell, Block, Borders},};
 
-use crate::{ui::renderable::Renderable, backend::{data_base::DataBase, sql::{QDL, SQL}}};
+use crate::{ui::renderable::Renderable, backend::{data_base::{ DatabaseExecute}, sql::{QDL}}};
 
 #[derive(Clone)]
 struct QueryCache{
@@ -55,71 +55,86 @@ impl QueryPage {
     }
 
     pub fn update(&mut self, row_count: usize) -> &mut Self{
-        match DataBase::from_env() {
-            Ok(db) => {
 
-                let mut columns: Vec<(String, usize)> = Vec::new();
-                let mut rows: Vec<Vec<String>> = Vec::new();
+        let mut columns: Vec<(String, usize)> = Vec::new();
+        let mut rows: Vec<Vec<String>> = Vec::new();
 
-                let _result: Result<Vec<Option<bool>>, _> = db.execute(
-                    &SQL::Select(self.get_query(row_count)),
-                    |row| {
-                        let row = row.unwrap();
+        let result: Result<Vec<Option<bool>>, crate::backend::sql::SQLError> = self.get_query(row_count)
+            .execute(
+                |row| {
+                let row = row.unwrap();
 
-                        let mut row_tmp: Vec<String> = Vec::new();
+                let mut row_tmp: Vec<String> = Vec::new();
 
-                        row.clone()
-                            .unwrap()
+                row.clone()
+                    .unwrap()
+                    .iter()
+                    .zip(
+                        row.columns()
                             .iter()
-                            .zip(
-                                row.columns()
-                                    .iter()
-                            )
-                            .enumerate()
-                            .map(|(i1, (val, col))| (i1, val, col))
-                            .for_each(|(i1, val, col)| {
-                                let val = format!("{:?}", val);
+                    )
+                    .enumerate()
+                    .map(|(i1, (val, col))| (i1, val, col))
+                    .for_each(|(i1, val, col)| {
+                        let val = format!("{:?}", val);
 
-                                match columns.get(i1) {
-                                    Some((_name, max_size)) => {
-                                        columns[i1].1 = max(*max_size, val.len());
-                                    },
-                                    None => {
-                                        columns.push({
-                                            let col_name = col.name_str();
-                                            (
-                                                col_name.to_string(),
-                                                max(
-                                                    col_name.len(),
-                                                    val.len()
-                                                )
-                                                
-                                            )
-                                        })
-                                    }
-                                }
-                                
-                                row_tmp.push(val);
-                            });
+                        match columns.get(i1) {
+                            Some((_name, max_size)) => {
+                                columns[i1].1 = max(*max_size, val.len());
+                            },
+                            None => {
+                                columns.push({
+                                    let col_name = col.name_str();
+                                    (
+                                        col_name.to_string(),
+                                        max(
+                                            col_name.len(),
+                                            val.len()
+                                        )
+                                        
+                                    )
+                                })
+                            }
+                        }
                         
-                        rows.push(row_tmp);
+                        row_tmp.push(val);
+                    });
+                
+                rows.push(row_tmp);
 
-                        None
-                    }
-                );
-
-                self.query_cache = QueryCache {
-                    start_col: min(self.query_cache.start_col, columns.len()-1),
-                    columns: columns,
-                    rows: rows
-                }
-            },
-            Err(_err) => {
-                todo!()
+                None
             }
+        );
+
+        match rows.len() {
+            0 => self.update_cache(
+                result,
+                0,
+                self.query_cache.columns.clone(),
+                rows 
+            ),
+            _ => self.update_cache(
+                result,
+                min(self.query_cache.start_col, columns.len()-1),
+                columns,
+                rows
+            ),
         }
 
         self
+    }
+
+    fn update_cache(&mut self, result: Result<Vec<Option<bool>>, crate::backend::sql::SQLError>, start_col: usize, columns: Vec<(String, usize)>, rows: Vec<Vec<String>>) {
+        match result {
+            Ok(_) => {
+                self.query_cache = QueryCache {
+                    start_col: start_col,
+                    columns: columns,
+                    rows: rows
+                };
+            },
+            Err(_) => {}
+        }
     }
 
     fn get_query(&self, row_count: usize) -> QDL {

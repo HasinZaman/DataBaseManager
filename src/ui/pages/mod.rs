@@ -1,13 +1,13 @@
 use super::renderable::Renderable;
 
-pub mod relations;
 pub mod schema;
+pub mod query;
 pub mod snapshot;
 
 pub enum Pages {
-    RelationList(relations::relation_list::RelationListPage),
-    Relation(relations::relation_page::RelationPage),
-    Query(schema::QueryPage),
+    RelationList(schema::relation_list::RelationListPage),
+    Relation(schema::relation_page::RelationPage),
+    Query(query::QueryPage),
     SnapShot(snapshot::SnapShotPage)
 }
 
