@@ -335,7 +335,7 @@ impl fmt::Display for Constraint{
             Constraint::NotNull => write!(f, "Not Null"),
             Constraint::Unique => write!(f, "Unique"),
             Constraint::ForeignKey{table_name: table,attribute_name: attr} => write!(f, "{}({})", table, attr),
-            Constraint::AutoIncrement => write!(f, "Auto Increment"),
+            Constraint::AutoIncrement => write!(f, "Auto_increment"),
         }
     }
 }
