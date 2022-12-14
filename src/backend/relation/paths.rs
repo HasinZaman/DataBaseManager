@@ -164,7 +164,7 @@ pub fn get_generation_path(relations: &Vec<Relation>, dependency_tree: &Dependen
         if visited[i] {
             continue 'node_loop;
         }
-        println!("explore:{i}");
+        //println!("explore:{i}");
 
         if let Some(mut path) = add_dependency(relations, &dependency_tree, &mut visited, i) {
             order.append(&mut path);
@@ -232,7 +232,9 @@ fn add_dependency(relations: &Vec<Relation>, dependency_tree: &DependencyGraph, 
     return Some(order);
 }
 
+#[cfg(test)]
 mod tests{
+    #![allow(unused_imports)]
     use std::{collections::{HashSet, HashMap}, f32::consts::E};
 
     use petgraph::{Graph, adj::NodeIndex, visit::NodeIndexable, Incoming, Outgoing};
@@ -250,6 +252,7 @@ mod tests{
     use super::get_generation_path;
 
     //assert_eq_graph checks if two graphs are the same
+    #[allow(unused_macros)]
     macro_rules! assert_eq_graph {
         ($actual: ident, $expected: ident, $relations: ident) => {
             println!("{:?}", $relations);
@@ -295,6 +298,7 @@ mod tests{
             }
         }
     }
+    #[allow(unused_macros)]
     macro_rules! foreign_relation {
         [] => {
             Attribute{
@@ -379,8 +383,8 @@ mod tests{
         let actual = get_dependency_graph(&relations);
         
         let mut expected: DependencyGraph = Graph::new();
-        let v1 = expected.add_node(0);
-        let v2 = expected.add_node(1);
+        let _v1 = expected.add_node(0);
+        let _v2 = expected.add_node(1);
 
         assert_eq_graph!(actual, expected, relations);
     }
@@ -445,7 +449,7 @@ mod tests{
             Relation::View(
                 View{
                     name: String::from("view_1"),
-                    query: SQL::from("SELECT * FROM table_1").unwrap().qdl().unwrap().clone()
+                    query: SQL::new("SELECT * FROM table_1").unwrap().qdl().unwrap().clone()
                 }
             )
         ];
@@ -485,7 +489,7 @@ mod tests{
             Relation::View(
                 View{
                     name: String::from("view_1"),
-                    query: SQL::from("SELECT * FROM table_1, table_2").unwrap().qdl().unwrap().clone()
+                    query: SQL::new("SELECT * FROM table_1, table_2").unwrap().qdl().unwrap().clone()
                 }
             )
 
@@ -536,7 +540,7 @@ mod tests{
             Relation::View(
                 View{
                     name: String::from("view_1"),
-                    query: SQL::from("SELECT * FROM table_1, table_2, table_3").unwrap().qdl().unwrap().clone()
+                    query: SQL::new("SELECT * FROM table_1, table_2, table_3").unwrap().qdl().unwrap().clone()
                 }
             )
 
@@ -556,6 +560,7 @@ mod tests{
     }
 
     //assert_path checks the validity of a path by brute force checking every relation. Making sure that all dependency relations are in front of a given relation that being checked
+    #[allow(unused_macros)]
     macro_rules! assert_path {
         ($relations: ident, $dependency_tree: ident, $actual: ident) => {
             println!("{:?}", $actual);

@@ -502,13 +502,18 @@ impl fmt::Display for AttributeType{
     }
 }
 
+#[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    #![allow(unused_imports)]
+    use std::collections::{HashSet, HashMap};
+
+    use crate::{backend::sql::QML, ui::menu::Tab};
 
     use super::{Table, Attribute, AttributeType, Constraint};
 
+    //table Create statement
     #[test]
-    fn table_to_string_test_1() {
+    fn create_test_1() {
         let table = Table{
             name: String::from("table_1"),
             attributes: vec![
@@ -526,11 +531,11 @@ mod tests {
             primary_key: Some(0),
         };
 
-        assert_eq!(table.to_string(), "CREATE TABLE table_1 (attr_1 text(10) Unique Not Null, PRIMARY KEY(attr_1))")
+        assert_eq!(*table.create(), "CREATE TABLE table_1 (attr_1 text(10) Unique Not Null, PRIMARY KEY(attr_1))")
     }
 
     #[test]
-    fn table_to_string_test_2() {
+    fn create_test_2() {
         let table = Table{
             name: String::from("table_1"),
             attributes: vec![
@@ -543,8 +548,142 @@ mod tests {
             primary_key: Some(0),
         };
 
-        assert_eq!(table.to_string(), "CREATE TABLE table_1 (attr_1 text(10), PRIMARY KEY(attr_1))")
+        assert_eq!(*table.create(), "CREATE TABLE table_1 (attr_1 text(10), PRIMARY KEY(attr_1))")
     }
 
     //do more tests
+
+    //table insert statement
+    #[test]
+    fn insert_test_1() {
+        let table = Table{
+            name: String::from("table_1"),
+            attributes: vec![
+                Attribute{
+                    name: String::from("PersonID"),
+                    data_type: AttributeType::Int(16),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("LastName"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("FirstName"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("Address"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("City"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+            ],
+            primary_key: None,
+        };
+
+        let mut values = HashMap::new();
+
+        values.insert(String::from("PersonID"), String::from("23"));
+        values.insert(String::from("LastName"), String::from("'Doe'"));
+        values.insert(String::from("FirstName"), String::from("'John'"));
+        values.insert(String::from("Address"), String::from("'1st Street'"));
+        values.insert(String::from("City"), String::from("'Night City'"));
+
+        let actual = table.insert(&values);
+
+        assert_eq!(actual, Some(QML(String::from("INSERT INTO table_1(PersonID,LastName,FirstName,Address,City) VALUES (23,'Doe','John','1st Street','Night City')"))));
+    }
+
+    #[test]
+    fn insert_test_2(){
+        let table = Table{
+            name: String::from("table_1"),
+            attributes: vec![
+                Attribute{
+                    name: String::from("PersonID"),
+                    data_type: AttributeType::Int(16),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("LastName"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("FirstName"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("Address"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("City"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+            ],
+            primary_key: None,
+        };
+
+        let mut values = HashMap::new();
+
+        values.insert(String::from("PersonID"), String::from("23"));
+        values.insert(String::from("LastName"), String::from("'Doe'"));
+        values.insert(String::from("FirstName"), String::from("'John'"));
+
+        let actual = table.insert(&values);
+
+        assert_eq!(actual, Some(QML(String::from("INSERT INTO table_1(PersonID,LastName,FirstName) VALUES (23,'Doe','John')"))));
+    }
+
+    #[test]
+    fn insert_test_3(){
+        let table = Table{
+            name: String::from("table_1"),
+            attributes: vec![
+                Attribute{
+                    name: String::from("PersonID"),
+                    data_type: AttributeType::Int(16),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("LastName"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("FirstName"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("Address"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+                Attribute{
+                    name: String::from("City"),
+                    data_type: AttributeType::VarChar(255),
+                    constraint: HashSet::new()
+                },
+            ],
+            primary_key: None,
+        };
+
+        let values = HashMap::new();
+
+        let actual = table.insert(&values);
+
+        assert_eq!(actual, None);
+    }
 }

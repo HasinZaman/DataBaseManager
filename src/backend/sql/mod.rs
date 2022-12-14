@@ -4,7 +4,7 @@ use mysql::{Error, Row};
 use regex::Regex;
 use lazy_static::lazy_static;
 
-use super::data_base::{DataBase, DatabaseExecute};
+use super::data_base::{DataBase, DatabaseExecute, DatabaseError};
 
 mod file_insertion;
 
@@ -12,7 +12,7 @@ mod file_insertion;
 pub enum SQLError{
     NotValidCMD,
     InvalidQuery{expected_variant: SQL},
-    FailedToConnect(VarError),
+    FailedToConnect(DatabaseError),
     Execution(Error),
     Err(String)
 }
@@ -534,30 +534,14 @@ impl fmt::Display for SQL {
     }
 }
 
+
+#[cfg(test)]
 mod tests{
+    #[allow(unused_imports)]
+    use crate::test_tools::file_env::FileEnv;
+
+    #[allow(unused_imports)]
     use super::*;
-    use std::{fs, io::Write};
-
-    struct FileEnv{
-        file_name: String
-    }
-
-    impl FileEnv{
-        pub fn new(file_name: &str, content: &str) -> FileEnv {
-
-            let mut file = File::create(&file_name).unwrap();
-            file.write(&content.as_bytes()).unwrap();
-
-            FileEnv{ file_name: file_name.to_string() }
-        }
-    }
-
-    impl Drop for FileEnv{
-        fn drop(&mut self) {
-            println!("Dropping {}", &self.file_name);
-            fs::remove_file(&self.file_name).unwrap();
-        }
-    }
 
     //extracting commands from file
     #[test]
@@ -581,8 +565,8 @@ mod tests{
 
         let actual = SQL::from_file(file_name);
         let expected = vec![
-            SQL::from("CREATE TABLE tag (id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id))").unwrap(),
-            SQL::from("SELECT \"\n\t\t\n\t\t\"").unwrap(),
+            SQL::new("CREATE TABLE tag (id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id))").unwrap(),
+            SQL::new("SELECT \"\n\t\t\n\t\t\"").unwrap(),
         ];
         assert_eq!(
             actual.unwrap(),
@@ -609,9 +593,9 @@ mod tests{
 
         let actual = SQL::from_file(file_path);
         let expected = vec![
-            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
-            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2)").unwrap(),
-            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2)").unwrap(),
+            SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
+            SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2)").unwrap(),
+            SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2)").unwrap(),
         ];
         assert_eq!(
             actual.unwrap(),
@@ -638,7 +622,7 @@ mod tests{
         
         let actual = SQL::from_file(file_name_1);
         let expected = vec![
-            SQL::from("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
+            SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
         ];
 
         assert_eq!(
@@ -654,7 +638,7 @@ mod tests{
     fn create_test_1() {
         let input = "CREATE TABLE MyTable (RowId INT64 NOT NULL, `Order` INT64 ) PRIMARY KEY (RowId)";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         
         assert_eq!(
@@ -680,7 +664,7 @@ mod tests{
     fn alter_test_1() {
         let input = "ALTER DATABASE database_id";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         
         assert_eq!(
@@ -706,7 +690,7 @@ mod tests{
     fn drop_test_1() {
         let input = "DROP TABLE table_name";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         
         assert_eq!(
@@ -732,7 +716,7 @@ mod tests{
     fn truncate_test_1() {
         let input = "TRUNCATE TABLE table_name";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         
         assert_eq!(
@@ -758,7 +742,7 @@ mod tests{
     fn select_test_1() {
         let input = "SELECT 1 + 1";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         
         assert_eq!(
@@ -781,12 +765,11 @@ mod tests{
     }
 
     //Query Manipulation Language
-    
     #[test]
     fn insert_test_1() {
         let input = "INSERT INTO tbl_name (col1,col2) VALUES(15,col1*2)";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         
         assert_eq!(
@@ -812,7 +795,7 @@ mod tests{
     fn update_test_1() {
         let input = "UPDATE t1 SET col1 = col1 + 1, col2 = col1";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         assert_eq!(
             actual, 
@@ -837,7 +820,7 @@ mod tests{
     fn delete_test_1() {
         let input = "DELETE FROM somelog WHERE user = 'jcole' ORDER BY timestamp_column LIMIT 1";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         assert_eq!(
             actual, 
@@ -863,7 +846,7 @@ mod tests{
     fn grant_test_1() {
         let input = "GRANT ALL ON db1.* TO 'jeffrey'@'localhost'";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         assert_eq!(
             actual, 
@@ -888,7 +871,7 @@ mod tests{
     fn revoke_test_1() {
         let input = "REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost'";
 
-        let actual = SQL::from(input).unwrap();
+        let actual = SQL::new(input).unwrap();
 
         assert_eq!(
             actual, 

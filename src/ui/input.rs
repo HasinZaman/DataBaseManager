@@ -203,7 +203,9 @@ impl Renderable for Input{
     }
 }
 
+#[cfg(test)]
 mod tests{
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]

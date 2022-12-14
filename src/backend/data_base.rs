@@ -1,4 +1,6 @@
-use std::{fmt, env::{self, VarError}};
+use crate::backend::relation::Select;
+
+use std::{fmt, env::{self, VarError}, collections::HashMap};
 
 use mysql::{prelude::*, Opts, Conn, Row, Error, TxOpts};
 
@@ -255,70 +257,41 @@ impl fmt::Display for DataBase {
     }
 }
 
+#[cfg(test)]
 mod tests{
-    use std::{fs::{File, self}, io::Write};
+    #[allow(unused_imports)]
+    use std::{thread, time::Duration};
 
-    use crate::backend::sql::SQL;
+    #[allow(unused_imports)]
+    use lazy_static::lazy_static;
+    #[allow(unused_imports)]
+    use regex::Regex;
+    #[allow(unused_imports)]
+    use serial_test::serial;
 
+    #[allow(unused_imports)]
+    use crate::{backend::sql::{SQL, DDL, QML}, test_tools::db_env::DbEnv};
+
+    #[allow(unused_imports)]
     use super::DataBase;
 
-    struct FileEnv{
-        file_name: String
-    }
-    impl FileEnv{
-        pub fn new(file_name: &str, content: &str) -> FileEnv {
-
-            let mut file = File::create(&file_name).unwrap();
-            file.write(&content.as_bytes()).unwrap();
-
-            FileEnv{ file_name: file_name.to_string() }
-        }
-    }
-    impl Drop for FileEnv{
-        fn drop(&mut self) {
-            println!("Dropping {}", &self.file_name);
-            fs::remove_file(&self.file_name).unwrap();
-        }
-    }
-
-    struct DbEnv{
-        undo: Vec<SQL>
-    }
-    impl DbEnv{
-        pub fn new(set_up: Vec<SQL>, undo: Vec<SQL>) -> DbEnv {
-            let tmp = DbEnv { undo: undo };
-            
-            let db = DataBase::from_env().unwrap();
-
-            db.execute_multiple(&set_up).unwrap();
-
-            tmp
-        }
-    }
-    impl Drop for DbEnv{
-        fn drop(&mut self) {
-            let db = DataBase::from_env().unwrap();
-
-            db.execute_multiple(&self.undo).unwrap();
-        }
-    }
-
     #[test]
+    #[serial]
     fn execute_multiple_success() {
         let _env = DbEnv::new(
             vec![
-                SQL::from("CREATE TABLE execute_multiple_success (col1 INT)").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_success (col1) VALUES (1)").unwrap(),
+                SQL::new("CREATE TABLE execute_multiple_success (col1 INT)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_success (col1) VALUES (1)").unwrap(),
             ],
             vec![
-                SQL::from("DROP TABLE execute_multiple_success").unwrap(),
+                SQL::new("DROP TABLE execute_multiple_success").unwrap(),
             ]
         );
 
         let cmds = vec![
-            SQL::from("INSERT INTO execute_multiple_success (col1) VALUES (2)").unwrap(),
-            SQL::from("INSERT INTO execute_multiple_success (col1) VALUES (3)").unwrap(),
-            SQL::from("INSERT INTO execute_multiple_success (col1) VALUES (4)").unwrap(),
+            SQL::new("INSERT INTO execute_multiple_success (col1) VALUES (2)").unwrap(),
+            SQL::new("INSERT INTO execute_multiple_success (col1) VALUES (3)").unwrap(),
+            SQL::new("INSERT INTO execute_multiple_success (col1) VALUES (4)").unwrap(),
         ];
 
         let db = DataBase::from_env().unwrap();
@@ -327,7 +300,7 @@ mod tests{
         assert!(result.is_ok());
 
         let mut actual = db.execute(
-            &SQL::from("SELECT * FROM execute_multiple_success").unwrap(),
+            &SQL::new("SELECT * FROM execute_multiple_success").unwrap(),
             |row| {
                 let row = row.unwrap();
 
@@ -346,18 +319,19 @@ mod tests{
     }
 
     #[test]
+    #[serial]
     fn execute_one_success() {
         let _env = DbEnv::new(
             vec![
-                SQL::from("CREATE TABLE execute_one_success (col1 INT)").unwrap(),
-                SQL::from("INSERT INTO execute_one_success (col1) VALUES (1)").unwrap(),
+                SQL::new("CREATE TABLE execute_one_success (col1 INT)").unwrap(),
+                SQL::new("INSERT INTO execute_one_success (col1) VALUES (1)").unwrap(),
             ],
             vec![
-                SQL::from("DROP TABLE execute_one_success").unwrap(),
+                SQL::new("DROP TABLE execute_one_success").unwrap(),
             ]
         );
 
-        let cmd = SQL::from("INSERT INTO execute_one_success (col1) VALUES (2)").unwrap();
+        let cmd = SQL::new("INSERT INTO execute_one_success (col1) VALUES (2)").unwrap();
 
         let db = DataBase::from_env().unwrap();
 
@@ -365,7 +339,7 @@ mod tests{
         assert!(result.is_ok());
 
         let mut actual = db.execute(
-            &SQL::from("SELECT * FROM execute_one_success").unwrap(),
+            &SQL::new("SELECT * FROM execute_one_success").unwrap(),
             |row| {
                 let row = row.unwrap();
 
@@ -384,23 +358,24 @@ mod tests{
     }
     
     #[test]
+    #[serial]
     fn execute_multiple_fail() {
         let _env = DbEnv::new(
             vec![
-                SQL::from("CREATE TABLE execute_multiple_fail (col1 INT, PRIMARY KEY(col1))").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (1)").unwrap(),
+                SQL::new("CREATE TABLE execute_multiple_fail (col1 Int(16), PRIMARY KEY(col1))").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (1)").unwrap(),
             ],
             vec![
-                SQL::from("DROP TABLE execute_multiple_fail").unwrap(),
+                SQL::new("DROP TABLE execute_multiple_fail").unwrap(),
             ]
         );
 
         //syntax error
         {
             let cmds = vec![
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (2)").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (3))").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (4)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (2)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (3))").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (4)").unwrap(),
             ];
             let db = DataBase::from_env().unwrap();
 
@@ -408,7 +383,7 @@ mod tests{
             assert!(result.is_err());
 
             let mut actual = db.execute(
-                &SQL::from("SELECT * FROM execute_multiple_fail").unwrap(),
+                &SQL::new("SELECT * FROM execute_multiple_fail").unwrap(),
                 |row| {
                     let row = row.unwrap();
 
@@ -428,10 +403,10 @@ mod tests{
         //db constraint violation
         {
             let cmds = vec![
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (2)").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (3)").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (4)").unwrap(),
-                SQL::from("INSERT INTO execute_multiple_fail (col1) VALUES (4)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (2)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (3)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (4)").unwrap(),
+                SQL::new("INSERT INTO execute_multiple_fail (col1) VALUES (4)").unwrap(),
             ];
             let db = DataBase::from_env().unwrap();
 
@@ -439,7 +414,7 @@ mod tests{
             assert!(result.is_err());
 
             let mut actual = db.execute(
-                &SQL::from("SELECT * FROM execute_multiple_fail").unwrap(),
+                &SQL::new("SELECT * FROM execute_multiple_fail").unwrap(),
                 |row| {
                     let row = row.unwrap();
 
@@ -462,19 +437,20 @@ mod tests{
     }
 
     #[test]
+    #[serial]
     fn execute_one_fail() {
         let _env = DbEnv::new(
             vec![
-                SQL::from("CREATE TABLE execute_one_fail (col1 INT)").unwrap(),
-                SQL::from("INSERT INTO execute_one_fail (col1) VALUES (1)").unwrap(),
+                SQL::new("CREATE TABLE execute_one_fail (col1 INT)").unwrap(),
+                SQL::new("INSERT INTO execute_one_fail (col1) VALUES (1)").unwrap(),
             ],
             vec![
-                SQL::from("DROP TABLE execute_one_fail").unwrap(),
+                SQL::new("DROP TABLE execute_one_fail").unwrap(),
             ]
         );
         //syntax error
         {
-            let cmd = SQL::from("INSERT INTO execute_one_fail (col1) VALUES (2))").unwrap();
+            let cmd = SQL::new("INSERT INTO execute_one_fail (col1) VALUES (2))").unwrap();
 
             let db = DataBase::from_env().unwrap();
 
@@ -482,7 +458,7 @@ mod tests{
             assert!(result.is_err());
 
             let mut actual = db.execute(
-                &SQL::from("SELECT * FROM execute_one_fail").unwrap(),
+                &SQL::new("SELECT * FROM execute_one_fail").unwrap(),
                 |row| {
                     let row = row.unwrap();
 
@@ -501,7 +477,7 @@ mod tests{
         }
         //constraint violation
         {
-            let cmd = SQL::from("INSERT INTO execute_one_fail (col1) VALUES (1))").unwrap();
+            let cmd = SQL::new("INSERT INTO execute_one_fail (col1) VALUES (1))").unwrap();
 
             let db = DataBase::from_env().unwrap();
 
@@ -509,7 +485,7 @@ mod tests{
             assert!(result.is_err());
 
             let mut actual = db.execute(
-                &SQL::from("SELECT * FROM execute_one_fail").unwrap(),
+                &SQL::new("SELECT * FROM execute_one_fail").unwrap(),
                 |row| {
                     let row = row.unwrap();
 
@@ -528,4 +504,126 @@ mod tests{
         }
     }
     
+    #[test]
+    #[serial]
+    fn get_snapshot_test_1() {
+        let _env = DbEnv::new(
+            vec![
+                SQL::new("CREATE TABLE table_1_test (col1 Int(16))").unwrap(),
+                SQL::new("INSERT INTO table_1_test (col1) VALUES (1)").unwrap(),
+            ],
+            vec![
+                SQL::new("DROP TABLE table_1_test").unwrap(),
+            ]
+        );
+
+        let actual: Vec<String> = DataBase::from_env()
+            .unwrap()
+            .get_snapshot()
+            .iter()
+            .filter(|cmd| {
+                lazy_static!{
+                    static ref TEST_ENV : Regex = Regex::new("table_1_test").unwrap();
+                };
+                TEST_ENV.is_match(&cmd.to_string())
+            })
+            .map(|cmd| cmd.to_string())
+            .collect();
+
+        assert_eq!(
+            actual,
+            vec![
+                String::from("CREATE TABLE table_1_test (col1 int(16))"),
+                String::from("INSERT INTO table_1_test(col1) VALUES (1)"),
+            ]
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn get_snapshot_test_2() {
+        let generation_cmd =  vec![
+            SQL::new("CREATE TABLE patients (id INTEGER,first_name VARCHAR(255),last_name VARCHAR(255),date_of_birth DATE,gender CHAR(1),address VARCHAR(255), PRIMARY KEY(id))").unwrap(),
+            SQL::new("CREATE TABLE appointments (id INTEGER,patient_id INTEGER,date DATE,time TIME,FOREIGN KEY (patient_id) REFERENCES patients(id), PRIMARY KEY(id))").unwrap(),
+            SQL::new("CREATE TABLE medications (id INTEGER,patient_id INTEGER,name VARCHAR(255),dosage VARCHAR(255),FOREIGN KEY (patient_id) REFERENCES patients(id), PRIMARY KEY(id))").unwrap(),
+
+            SQL::new("INSERT INTO patients(id, first_name, last_name, date_of_birth, gender, address) VALUES (1, 'John', 'Doe', '1970-01-01', 'M', '123 Main St')").unwrap(),
+            SQL::new("INSERT INTO patients(id, first_name, last_name, date_of_birth, gender, address) VALUES (2, 'Jane', 'Doe', '1980-03-03', 'F', '456 Park Ave')").unwrap(),
+            SQL::new("INSERT INTO patients(id, first_name, last_name, date_of_birth, gender, address) VALUES (3, 'Jack', 'Smith', '1990-05-05', 'M', '789 Maple St')").unwrap(),
+
+            SQL::new("INSERT INTO appointments(id, patient_id, date, time) VALUES (1, 1, '2022-12-14', '09:00:00')").unwrap(),
+            SQL::new("INSERT INTO appointments(id, patient_id, date, time) VALUES (2, 1, '2022-12-15', '10:00:00')").unwrap(),
+            SQL::new("INSERT INTO appointments(id, patient_id, date, time) VALUES (3, 2, '2022-12-16', '11:00:00')").unwrap(),
+
+            SQL::new("INSERT INTO medications(id, patient_id, name, dosage) VALUES (1, 1, 'Ibuprofen', '200mg')").unwrap(),
+            SQL::new("INSERT INTO medications(id, patient_id, name, dosage) VALUES (2, 2, 'Aspirin', '325mg')").unwrap(),
+            SQL::new("INSERT INTO medications(id, patient_id, name, dosage) VALUES (3, 3, 'Acetaminophen', '500mg')").unwrap(),
+        ];
+        let destruction_cmd = vec![
+            SQL::new("DROP TABLE medications").unwrap(),
+            SQL::new("DROP TABLE appointments").unwrap(),
+            SQL::new("DROP TABLE patients").unwrap(),
+        ];
+
+        let _env = DbEnv::new(
+            generation_cmd,
+            destruction_cmd
+        );
+
+        let actual: Vec<String> = DataBase::from_env()
+            .unwrap()
+            .get_snapshot()
+            .iter()
+            .filter(|cmd| {
+                lazy_static!{
+                    static ref TEST_ENV : [Regex;3] = [
+                        Regex::new("patients").unwrap(),
+                        Regex::new("appointments").unwrap(),
+                        Regex::new("medications").unwrap(),
+                    ];
+                };
+
+                TEST_ENV.iter().any(|regex| regex.is_match(&cmd.to_string()))
+            })
+            .map(|cmd| cmd.to_string())
+            .collect();
+
+        let expected = vec![
+            String::from("CREATE TABLE patients (id int(11) Not Null,first_name varchar(255),last_name varchar(255),date_of_birth date,gender char(1),address varchar(255), PRIMARY KEY(id))"),
+            String::from("CREATE TABLE medications (id int(11) Not Null,patient_id int(11), FOREIGN KEY(patient_id) REFERENCES patients(id),name varchar(255),dosage varchar(255), PRIMARY KEY(id))"),
+            String::from("CREATE TABLE appointments (id int(11) Not Null,patient_id int(11), FOREIGN KEY(patient_id) REFERENCES patients(id),date date,time time, PRIMARY KEY(id))"),
+
+            String::from("INSERT INTO patients(id,first_name,last_name,date_of_birth,gender,address) VALUES (1,'John','Doe','1970-01-01','M','123 Main St')"),
+            String::from("INSERT INTO patients(id,first_name,last_name,date_of_birth,gender,address) VALUES (2,'Jane','Doe','1980-03-03','F','456 Park Ave')"),
+            String::from("INSERT INTO patients(id,first_name,last_name,date_of_birth,gender,address) VALUES (3,'Jack','Smith','1990-05-05','M','789 Maple St')"),
+
+            String::from("INSERT INTO medications(id,patient_id,name,dosage) VALUES (1,1,'Ibuprofen','200mg')"),
+            String::from("INSERT INTO medications(id,patient_id,name,dosage) VALUES (2,2,'Aspirin','325mg')"),
+            String::from("INSERT INTO medications(id,patient_id,name,dosage) VALUES (3,3,'Acetaminophen','500mg')"),
+
+            String::from("INSERT INTO appointments(id,patient_id,date,time) VALUES (1,1,'2022-12-14','009:00:00')"),
+            String::from("INSERT INTO appointments(id,patient_id,date,time) VALUES (2,1,'2022-12-15','010:00:00')"),
+            String::from("INSERT INTO appointments(id,patient_id,date,time) VALUES (3,2,'2022-12-16','011:00:00')"),
+        ];
+
+        actual.iter()
+            .zip(expected.iter())
+            .for_each(|(actual, expected)| assert_eq!(actual, expected));
+    }
+
+
+    #[test]
+    #[serial]
+    fn deletion_test() {
+        let db = DataBase::from_env().unwrap();
+
+        let _env = DbEnv::new(
+            db.get_deletion_cmds(),
+            db.get_snapshot()
+        );
+
+        let actual = db.get_snapshot();
+
+        assert_eq!(actual, vec![])
+    }
 }
