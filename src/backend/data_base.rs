@@ -7,7 +7,8 @@ use super::{sql::{SQL, QDL}, relation::{Relation, paths::{get_dependency_graph, 
 pub trait DatabaseExecute{
     type RowError;
 
-    fn execute<T,F>(&self, row_map: F) -> Result<Vec<T>, Self::RowError> where F : Fn(Result<Row, Error>) -> T;
+    fn execute<T,F>(&self, row_map: F) -> Result<Vec<T>, Self::RowError> where F : FnMut(Result<Row, Error>) -> T;
+}
 
 #[derive(Debug)]
 pub enum DatabaseError{

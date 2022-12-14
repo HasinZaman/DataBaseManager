@@ -1,4 +1,4 @@
-use std::{fmt, env::VarError, ops::{Deref, DerefMut}, fs::File, io::Read};
+use std::{fmt, ops::{Deref, DerefMut}, fs::File, io::{Read, Write}};
 
 use mysql::{Error, Row};
 use regex::Regex;
@@ -33,7 +33,7 @@ impl DerefMut for DDL{
 }
 impl DatabaseExecute for DDL{
     type RowError = SQLError;
-    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : Fn(Result<Row, Error>) -> T {
+    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : FnMut(Result<Row, Error>) -> T {
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
@@ -66,7 +66,7 @@ impl DerefMut for QDL{
 }
 impl DatabaseExecute for QDL{
     type RowError = SQLError;
-    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : Fn(Result<Row, Error>) -> T {
+    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : FnMut(Result<Row, Error>) -> T {
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
@@ -99,7 +99,7 @@ impl DerefMut for QML{
 }
 impl DatabaseExecute for QML{
     type RowError = SQLError;
-    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : Fn(Result<Row, Error>) -> T {
+    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : FnMut(Result<Row, Error>) -> T {
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
@@ -132,7 +132,7 @@ impl DerefMut for DCL{
 }
 impl DatabaseExecute for DCL{
     type RowError = SQLError;
-    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : Fn(Result<Row, Error>) -> T {
+    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : FnMut(Result<Row, Error>) -> T {
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
