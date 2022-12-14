@@ -19,7 +19,6 @@ macro_rules! load_env_var {
     ($key : literal) => {
         match env::var($key) {
             Err(err) => {
-                return Err(err);
                 return Err(DatabaseError::FailedToLoadENVVar(err));
             }
             Ok(ok) => ok,
