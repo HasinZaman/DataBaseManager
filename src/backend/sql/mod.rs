@@ -418,24 +418,6 @@ impl SQL {
         }
     }
 
-    pub fn execute<E, F>(&self, row_map: F) -> Result<Vec<E>, SQLError> where F : Fn(Result<Row, Error>) -> E {
-        let db = DataBase::from_env();
-
-        match db {
-            Ok(db) => {
-                let tmp: Vec<E> = match db.execute(&self, row_map){
-                    Ok(val) => val,
-                    Err(err) => return Err(SQLError::Execution(err)),
-                };
-
-                Ok(tmp)
-            },
-            Err(err) => {
-                Err(SQLError::FailedToConnect(err))
-            }
-        }
-    }
-
     pub fn from_file(file_path: &str) -> Result<Vec<SQL>, std::io::Error> {
         let mut file: File = File::open(file_path)?;
 
