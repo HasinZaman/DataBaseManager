@@ -101,8 +101,66 @@ impl Table {
         Some(foreign_key)
     }
 
-    pub fn create(&self) -> SQL{
-        SQL::from(&self.to_string()).unwrap()
+    pub fn create(&self) -> DDL{
+        SQL::new(&self.to_string()).unwrap().ddl().unwrap().clone()
+    }
+
+    pub fn create_unchecked(&self) -> DDL {
+        DDL(self.to_string())
+    }
+
+    pub fn insert(&self, values: &HashMap<String, String>) -> Option<QML>{//should be turned into Result<SQL, ERROR why couldn't be parsed>
+        let (columns, values) = self.attributes
+            .iter()
+            .filter(|attr| {
+                if let Some(_) = values.get(&attr.name) {
+                    return true;
+                }
+                return false;
+            })
+            .map(|attr| {
+                (
+                    attr.name.clone(),
+                    {
+                        match &attr.data_type{
+                            // AttributeType::Char(_) |
+                            // AttributeType::VarChar(_) |
+                            // AttributeType::Binary(_) |
+                            // AttributeType::VarBinary(_) |
+                            // AttributeType::TinyBlob |
+                            // AttributeType::TinyText |
+                            // AttributeType::Text(_) |
+                            // AttributeType::Blob(_) |
+                            // AttributeType::MediumText |
+                            // AttributeType::MediumBlob |
+                            // AttributeType::LongText |
+                            // AttributeType::LongBlob |
+                            
+                            // AttributeType::Date |
+                            // AttributeType::DateTime |
+                            // AttributeType::Time => format!("\'{}\'", values.get(&attr.name).unwrap()),
+
+                            _ => values.get(&attr.name).unwrap().to_string()
+                        }
+                    }
+                )
+            })
+            .fold(
+                (String::new(), String::new()),
+                |(columns, values), (column, value)| (format!("{},{}", columns, column), format!("{},{}", values, value))
+            );
+
+        if ("", "") == (&columns, &values) {
+            return None;
+        }
+
+        let (m1, m2) = (columns.len(), values.len());
+
+        Some(QML(format!("INSERT INTO {}({}) VALUES ({})", &self.name, &columns[1..m1], &values[1..m2])))
+    }
+
+    pub fn drop(&self) -> DDL{
+        DDL(format!("DROP TABLE {}", self.name))
     }
 }
 
@@ -125,6 +183,12 @@ impl Display for Table {
             },
             None => write!(f, "CREATE TABLE {} ({})", self.name, attr),
         }
+    }
+}
+
+impl Select for Table {
+    fn select(&self) -> QDL {
+        QDL(format!("SELECT * FROM {}", self.name))
     }
 }
 
@@ -180,7 +244,7 @@ impl Attribute {
                         else if key == "MUL" {
                             let db = DataBase::from_env().unwrap();
 
-                            let _tmp: Vec<Constraint> = db.execute(&SQL::from(&format!(r"SHOW CREATE TABLE `{}`;", table_name)).unwrap(), |row| {
+                            let _tmp: Vec<Constraint> = db.execute(&SQL::new(&format!(r"SHOW CREATE TABLE `{}`;", table_name)).unwrap(), |row| {
                                 let command : String = row.unwrap().get(1).unwrap();
                                 
                                 let tag_check: Regex = Regex::new(&format!("FOREIGN KEY \\(`{}`\\) REFERENCES `([a-zA-Z0-9]+)` \\(`([a-zA-Z0-9]+)`\\)", name)).unwrap();
@@ -428,10 +492,10 @@ impl fmt::Display for AttributeType{
 
             //Date time
             AttributeType::Date => write!(f, "date"),
-            AttributeType::DateTime => write!(f, "DateTime"),
-            AttributeType::TimeStamp => write!(f, "TimeStamp"),
-            AttributeType::Time => write!(f, "Time"),
-            AttributeType::Year => write!(f, "Year"),
+            AttributeType::DateTime => write!(f, "datetime"),
+            AttributeType::TimeStamp => write!(f, "timeStamp"),
+            AttributeType::Time => write!(f, "time"),
+            AttributeType::Year => write!(f, "year"),
         }
     }
 }
