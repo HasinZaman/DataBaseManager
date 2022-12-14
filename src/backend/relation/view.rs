@@ -1,7 +1,9 @@
 use regex::Regex;
 use lazy_static::lazy_static;
 
-use crate::backend::{data_base::DataBase, sql::{QDL, SQL}};
+use crate::backend::{ sql::{QDL, SQL, DDL}, data_base::DataBase};
+
+use super::Select;
 
 #[derive(Clone, Debug)]
 pub struct View{
@@ -14,7 +16,7 @@ impl View {
         let db = DataBase::from_env().unwrap();
 
         let tmp : Vec<String> = db.execute(
-            &SQL::from(&format!(r"SHOW CREATE TABLE {}", name)).unwrap(),
+            &SQL::new(&format!(r"SHOW CREATE TABLE {}", name)).unwrap(),
             |row| {
                 let tmp_str: String = row.unwrap().get(1).unwrap();
 
@@ -36,7 +38,7 @@ impl View {
                 Some(
                     View {
                         name: name.to_string(),
-                        query: SQL::from(query).unwrap().qdl().unwrap().clone()
+                        query: SQL::new(query).unwrap().qdl().unwrap().clone()
                     }
                 )
             },
@@ -50,5 +52,15 @@ impl View {
             name: name.to_string(),
             query: query
         }
+    }
+
+    pub fn drop(&self) -> DDL{
+        DDL(format!("DROP VIEW {}", self.name))
+    }
+}
+
+impl Select for View{
+    fn select(&self) -> QDL {
+        QDL(format!("SELECT * FROM {}", self.name))
     }
 }
