@@ -477,7 +477,7 @@ impl SQL {
         if CMD_END_CHECK_REGEX.is_match(query_cmd) {
             let query_cmd_tmp = CMD_END_CHECK_REGEX.replace(query_cmd, "");
             
-            match SQL::from(&query_cmd_tmp.to_string()) {
+            match SQL::new(&query_cmd_tmp.to_string()) {
                 Ok(val) => {
                     results.push(val);
                     query_cmd.clear();
