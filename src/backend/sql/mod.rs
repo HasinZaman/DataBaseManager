@@ -37,7 +37,8 @@ impl DatabaseExecute for DDL{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
+                //let sql = SQL::from(self);
+                let tmp: Vec<T> = match db.execute(&self.into(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -46,6 +47,38 @@ impl DatabaseExecute for DDL{
             Err(err) => {
                 Err(SQLError::FailedToConnect(err))
             }
+        }
+    }
+}
+impl From<DDL> for SQL{
+    fn from(ddl: DDL) -> Self {
+        let sql = SQL::new(&ddl)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid ddl state", *ddl));
+
+        match sql {
+            SQL::Create(_) |
+            SQL::Alter(_) |
+            SQL::Drop(_) |
+            SQL::Truncate(_) |
+            SQL::Show(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid ddl state", *ddl)
+        }
+    }
+}
+impl From<&DDL> for SQL{
+    fn from(ddl: &DDL) -> Self {
+        let sql = SQL::new(&ddl)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid ddl state", **ddl));
+
+        match sql {
+            SQL::Create(_) |
+            SQL::Alter(_) |
+            SQL::Drop(_) |
+            SQL::Truncate(_) |
+            SQL::Show(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid ddl state", **ddl)
         }
     }
 }
@@ -70,7 +103,7 @@ impl DatabaseExecute for QDL{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
+                let tmp: Vec<T> = match db.execute(&self.into(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -79,6 +112,30 @@ impl DatabaseExecute for QDL{
             Err(err) => {
                 Err(SQLError::FailedToConnect(err))
             }
+        }
+    }
+}
+impl From<QDL> for SQL{
+    fn from(qdl: QDL) -> Self {
+        let sql = SQL::new(&qdl)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid qdl state", *qdl));
+
+        match sql {
+            SQL::Select(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid qdl state", *qdl)
+        }
+    }
+}
+impl From<&QDL> for SQL{
+    fn from(qdl: &QDL) -> Self {
+        let sql = SQL::new(&qdl)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid qdl state", **qdl));
+
+        match sql {
+            SQL::Select(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid qdl state", **qdl)
         }
     }
 }
@@ -103,7 +160,7 @@ impl DatabaseExecute for QML{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
+                let tmp: Vec<T> = match db.execute(&self.into(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -112,6 +169,34 @@ impl DatabaseExecute for QML{
             Err(err) => {
                 Err(SQLError::FailedToConnect(err))
             }
+        }
+    }
+}
+impl From<QML> for SQL{
+    fn from(qml: QML) -> Self {
+        let sql = SQL::new(&qml)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid qml state", *qml));
+
+        match sql {
+            SQL::Insert(_) |
+            SQL::Update(_) |
+            SQL::Delete(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid qml state", *qml)
+        }
+    }
+}
+impl From<&QML> for SQL{
+    fn from(qml: &QML) -> Self {
+        let sql = SQL::new(&qml)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid qml state", **qml));
+
+        match sql {
+            SQL::Insert(_) |
+            SQL::Update(_) |
+            SQL::Delete(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid qml state", **qml)
         }
     }
 }
@@ -136,7 +221,7 @@ impl DatabaseExecute for DCL{
         let db = DataBase::from_env();
         match db {
             Ok(db) => {
-                let tmp: Vec<T> = match db.execute(&SQL::from(&*self).unwrap(), row_map){
+                let tmp: Vec<T> = match db.execute(&self.into(), row_map){
                     Ok(val) => val,
                     Err(err) => return Err(SQLError::Execution(err)),
                 };
@@ -145,6 +230,32 @@ impl DatabaseExecute for DCL{
             Err(err) => {
                 Err(SQLError::FailedToConnect(err))
             }
+        }
+    }
+}
+impl From<DCL> for SQL{
+    fn from(dcl: DCL) -> Self {
+        let sql = SQL::new(&dcl)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid dcl state", *dcl));
+
+        match sql {
+            SQL::Grant(_) |
+            SQL::Revoke(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid dcl state", *dcl)
+        }
+    }
+}
+impl From<&DCL> for SQL{
+    fn from(dcl: &DCL) -> Self {
+        let sql = SQL::new(&dcl)
+            .unwrap_or_else(|_| panic!("\"{}\" is an invalid dcl state", **dcl));
+
+        match sql {
+            SQL::Grant(_) |
+            SQL::Revoke(_) => sql,
+
+            _=> panic!("\"{}\" is an invalid dcl state", **dcl)
         }
     }
 }
