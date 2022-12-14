@@ -139,6 +139,106 @@ impl DataBase {
         let _result = tx.commit();
         Ok(())
     }
+
+    pub fn get_snapshot(&self) -> Vec<SQL> {
+        let relations = Relation::get_relations().unwrap();
+
+        let dependencies = get_dependency_graph(&relations);
+
+        let generation_order = get_generation_path(&relations, &dependencies);
+
+        let relation_cmd: Vec<SQL> = generation_order.iter()
+            .map(|index| {
+                relations[*index].create().into()
+            })
+            .collect();
+
+        let mut insertion_cmd: Vec<SQL> = generation_order.iter()
+            .map(|index| {
+                &relations[*index]
+            })
+            .filter(|relation| {
+                match relation{
+                    Relation::Table(_) => true,
+                    Relation::View(_) => false,
+                }
+            })
+            .map(|relation| {
+                match relation {
+                    Relation::Table(table) => table,
+                    Relation::View(_) => panic!(),
+                }
+            })
+            .flat_map(|table| {
+                let result = table.select()
+                    .execute(
+                        |row| {
+                        if let Err(_err) = row {
+                            return None
+                        }
+                        let row = row.unwrap();
+
+                        let mut attributes = HashMap::new();
+
+                        row.columns()
+                        .iter()
+                        .map(|column| {
+                            column.name_str().to_string()
+                        }).zip(
+                            row.unwrap().iter()
+                                .map(|val| {
+                                    val.as_sql(false).to_string()
+                                })
+                        ).for_each(|(column, value)| {
+                            attributes.insert(
+                                column,
+                                value
+                            );
+                        });
+
+                        Some(attributes)
+                    }
+                );
+
+                if let Err(_err) = result {
+                    todo!()
+                }
+
+                let values = result.unwrap();
+                
+                values.iter()
+                .filter_map(|p| {
+                    p.clone()
+                })
+                .map(|val| table.insert(&val).unwrap().into())
+                .collect::<Vec<SQL>>()
+            }).collect();
+        
+        let mut cmds = relation_cmd;
+
+        cmds.append(&mut insertion_cmd);
+
+        cmds
+    }
+
+    pub fn get_deletion_cmds(&self) -> Vec<SQL> {
+        let relations = Relation::get_relations().unwrap();
+
+        let dependencies = get_dependency_graph(&relations);
+
+        let generation_order = get_generation_path(&relations, &dependencies);
+
+        generation_order.iter()
+            .rev()
+            .map(|index| {
+                &relations[*index]
+            })
+            .map(|relation| SQL::from(relation.drop()))
+            .collect()
+    }
+    pub fn delete_relations(&self) -> Result<(), Error> {
+        self.execute_multiple(&self.get_deletion_cmds())
+    }
 }
 
 impl fmt::Display for DataBase {
