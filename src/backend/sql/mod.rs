@@ -511,7 +511,7 @@ impl SQL {
 
 impl DatabaseExecute for SQL{
     type RowError = SQLError;
-    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : Fn(Result<Row, Error>) -> T {
+    fn execute<T, F>(&self, row_map: F) -> Result<Vec<T>, SQLError> where F : FnMut(Result<Row, Error>) -> T {
         match self {
             SQL::Create(ddl) |
             SQL::Alter(ddl) |
