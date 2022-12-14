@@ -1,10 +1,12 @@
-use std::{fmt::{self, Display}, collections::HashSet};
+use std::{fmt::{self, Display}, collections::{HashSet, HashMap}};
 use core::hash::Hash;
 
 use mysql::{Row};
 use regex::Regex;
 
-use crate::backend::{data_base::DataBase, sql::SQL};
+use crate::backend::{data_base::DataBase, sql::{SQL, QML, DDL, QDL}};
+
+use super::Select;
 
 /// Table struct defines the structure of a relation table
 #[derive(Clone, Debug)]
