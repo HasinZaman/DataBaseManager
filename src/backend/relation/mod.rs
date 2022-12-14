@@ -4,11 +4,15 @@ use crate::backend::data_base::DataBase;
 
 use self::{table::Table, view::View};
 
-use super::sql::{SQL};
+use super::sql::{SQL, DDL, QDL};
 
 pub mod table;
 pub mod view;
 pub mod paths;
+
+pub trait Select {
+    fn select(&self) -> QDL;
+}
 
 //Relation Defines the two relations that can exist in a MySql database
 #[derive(Clone, Debug)]
@@ -22,7 +26,7 @@ impl Relation {
         match DataBase::from_env() {
             Ok(db) => {
                 let rows: Vec<Relation> = db.execute(
-                    &SQL::from("SHOW FULL TABLES").unwrap(),
+                    &SQL::new("SHOW FULL TABLES").unwrap(),
                     |row| {
                         match row {
                             Ok(row) => {
@@ -80,14 +84,27 @@ impl Relation {
             Relation::View(view) => view.name.clone()
         }
     }
-    pub fn select(&self) -> SQL {
-        SQL::from(&format!("SELECT * FROM {}", self.name())).unwrap()
-    }
 
-    pub fn create(&self) -> SQL {
+    pub fn create(&self) -> DDL {
         match self {
             Relation::Table(table) => table.create(),
-            Relation::View(view) => SQL::from(&format!("CREATE VIEW {} AS {}", &self.name(), &*view.query)).unwrap(),
+            Relation::View(view) => SQL::new(&format!("CREATE VIEW {} AS {}", &self.name(), &*view.query)).unwrap().ddl().unwrap().clone(),
+        }
+    }
+
+    pub fn drop(&self) -> DDL {
+        match self {
+            Relation::Table(table) => table.drop(),
+            Relation::View(view) => view.drop(),
+        }
+    }
+}
+
+impl Select for Relation{
+    fn select(&self) -> QDL {
+        match self{
+            Relation::Table(table) => table.select(),
+            Relation::View(view) => view.select(),
         }
     }
 }
