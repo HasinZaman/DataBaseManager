@@ -25,7 +25,7 @@ impl Table {
                 
                 //println!("{}", table_name);
                 let attr : Vec<(Option<Attribute>, bool)> = db.execute(
-                    &SQL::from(&format!("SHOW FULL COLUMNS FROM {}", table_name)).unwrap(),
+                    &SQL::new(&format!("SHOW FULL COLUMNS FROM {}", table_name)).unwrap(),
                     |row| {
                         match row {
                             Ok(column) => {
