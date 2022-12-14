@@ -304,7 +304,7 @@ macro_rules! SQL_Parse {
 }
 
 impl SQL {
-    pub fn from(query: &str) -> Result<SQL, SQLError> {
+    pub fn new(query: &str) -> Result<SQL, SQLError> {
         
         let query = match file_insertion::contents(query) {
             Ok(val) => val,
