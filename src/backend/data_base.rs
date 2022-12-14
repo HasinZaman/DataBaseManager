@@ -2,13 +2,17 @@ use std::{fmt, env::{self, VarError}};
 
 use mysql::{prelude::*, Opts, Conn, Row, Error, TxOpts};
 
-use super::sql::SQL;
+use super::{sql::{SQL, QDL}, relation::{Relation, paths::{get_dependency_graph, get_generation_path}}};
 
 pub trait DatabaseExecute{
     type RowError;
 
     fn execute<T,F>(&self, row_map: F) -> Result<Vec<T>, Self::RowError> where F : Fn(Result<Row, Error>) -> T;
 
+#[derive(Debug)]
+pub enum DatabaseError{
+    FailedToLoadENVVar(VarError),
+    Error(String)
 }
 
 macro_rules! load_env_var {
@@ -16,6 +20,7 @@ macro_rules! load_env_var {
         match env::var($key) {
             Err(err) => {
                 return Err(err);
+                return Err(DatabaseError::FailedToLoadENVVar(err));
             }
             Ok(ok) => ok,
         }
@@ -32,18 +37,29 @@ pub struct DataBase {
 }
 
 impl DataBase {
-    pub fn new(host: String, port: String, name: String, username: String, password: String) -> DataBase {
-        DataBase { host: host, port: port, name: name, username: username, password: password }
+    pub fn new(host: String, port: String, name: String, username: String, password: String) -> Option<DataBase> {
+        let db = DataBase { host: host, port: port, name: name, username: username, password: password };
+
+        match db.ping() {
+            true => Some(db),
+            false => None,
+        }
     }
 
-    pub fn from_env() -> Result<DataBase, VarError> {
-        Ok(DataBase {
-            host: load_env_var!("DB_host"),
-            port: load_env_var!("DB_port"),
-            name: load_env_var!("DB_name"),
-            username: load_env_var!("DB_username"),
-            password: load_env_var!("DB_password"),
-        })
+    pub fn from_env() -> Result<DataBase, DatabaseError> {
+
+        let db = DataBase::new(
+            load_env_var!("DB_host"),
+            load_env_var!("DB_port"),
+            load_env_var!("DB_name"),
+            load_env_var!("DB_username"),
+            load_env_var!("DB_password"),
+        );
+
+        match db {
+            Some(db) => Ok(db),
+            None => Err(DatabaseError::Error("Failed to connect".into())),
+        }
     }
 
     fn get_conn(&self) -> mysql::Conn {
@@ -55,6 +71,22 @@ impl DataBase {
         let url: Opts = Opts::from_url(&url).unwrap();
 
         Conn::new(url).unwrap()
+    }
+
+    pub fn ping(&self) -> bool {
+        let result = self.execute(
+            &SQL::Select(QDL(format!("SELECT 1"))), 
+            |row| {
+                match row{
+                    Ok(_) => true,
+                    Err(_) => false,
+                }
+            });
+        
+        match result {
+            Ok(val) => val == vec![true],
+            Err(_) => false,
+        }
     }
 
     pub fn execute<E, F>(&self, command: &SQL, row_map: F ) -> Result<Vec<E>, Error> where F : FnMut(Result<Row, Error>) -> E{
