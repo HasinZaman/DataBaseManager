@@ -1,8 +1,8 @@
 use std::{
     collections::HashSet,
     hash::{Hash, Hasher},
-    {fs::File},
-    io::prelude::*
+    {fs::{File, remove_file}},
+    io::prelude::*, env, fs
 };
 
 use ron::{error::SpannedError};
@@ -13,6 +13,8 @@ use serde::{
 };
 
 use time::{OffsetDateTime};
+
+use super::{sql::SQL, data_base::DataBase};
 
 
 #[derive(Debug)]
@@ -45,6 +47,30 @@ impl SnapShot {
                 }
             }
         )
+    }
+}
+
+impl From<DataBase> for SnapShot {
+    fn from(db: DataBase) -> Self {
+        let mut path = env::current_dir().unwrap();
+        path.push("snap_shots");
+        let metadata = fs::metadata(&path);
+
+        if metadata.is_err() {
+            let _result = fs::create_dir_all(path.as_path());
+        }
+
+        let timestamp = OffsetDateTime::now_utc();
+
+        path.push(format!("snap_shot_{}.sql", timestamp.unix_timestamp()));
+
+        let file_path = path.as_path().to_str().unwrap();
+        let _result = SQL::save_to_file(file_path, &db.get_snapshot());
+
+        SnapShot{
+            time_stamp: timestamp,
+            path: file_path.to_string(),
+        }
     }
 }
 
@@ -96,6 +122,12 @@ impl SnapShotsFile{
         self.snap_shots = tmp.snap_shots;
     }
 
+    pub fn add_snapshot(&mut self, snapshot: SnapShot) {
+        self.snap_shots.insert(snapshot);
+        let _result = self.save();
+        self.update();
+    }
+
     pub fn save(&self) -> Result<(), Error> {
         let mut file : File = match File::create(&self.name) {
             Ok(file) => file,
@@ -117,19 +149,41 @@ impl SnapShotsFile{
         }
 
     }
+
+    pub fn replace_snapshots(&mut self, snapshots: &Vec<SnapShot>) {
+        let mut snap_shots: HashSet<SnapShot> = HashSet::new();
+
+        snapshots.iter()
+            .for_each(|snapshot| {snap_shots.insert(snapshot.clone());});
+
+    
+        self.snap_shots.difference(&snap_shots)
+            .into_iter()
+            .for_each(|snapshot| {
+                let _result = remove_file(&snapshot.path);
+            });
+        
+      self.snap_shots.clear();
+
+      snapshots.iter()
+            .for_each(|snapshot| {self.snap_shots.insert(snapshot.clone());});
+
+     let _result = self.save();
+    }
 }
 
 impl Default for SnapShotsFile{
     fn default() -> Self {
-        let path = "snap_shots.ron";
-        let snap_shot_file = SnapShotsFile::open(path);
+        const PATH: &str = "snap_shots.ron";
+
+        let snap_shot_file = SnapShotsFile::open(PATH);
 
         match snap_shot_file {
             Ok(val) => val,
             Err(err) => {
                 if let Error::FileOpenErr(_err) = err {
                     let snap_shot_file = Self {
-                        name: String::from(path),
+                        name: String::from(PATH),
                         snap_shots: HashSet::new(),
                     };
                     
