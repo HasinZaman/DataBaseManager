@@ -142,6 +142,26 @@ impl DataBase {
         Ok(())
     }
 
+    fn execute_string(&self, commands: &Vec<&str>) -> Result<(), Error> {
+        let mut conn = self.get_conn();
+
+        let mut tx = conn.start_transaction(TxOpts::default())?;
+
+        for sql in commands{
+            let statement = tx.prep(sql.to_string())?;
+
+            if let Err(err) = tx.exec_iter(&statement, ()) {
+                //let _result = &tx.rollback();
+                return Err(err)
+            }
+            
+            let _result = tx.close(statement);
+        }
+
+        let _result = tx.commit();
+        Ok(())
+    }
+
     pub fn get_snapshot(&self) -> Vec<SQL> {
         let relations = Relation::get_relations().unwrap();
 
@@ -238,8 +258,20 @@ impl DataBase {
             .map(|relation| SQL::from(relation.drop()))
             .collect()
     }
+
     pub fn delete_relations(&self) -> Result<(), Error> {
         self.execute_multiple(&self.get_deletion_cmds())
+    }
+
+    pub fn rollback(&self, new_state: Vec<SQL>)  -> Result<(), Error> {
+        let rollback_cmds : Vec<SQL> = vec![
+            self.get_deletion_cmds(),
+            new_state,
+        ].iter()
+        .flat_map(|sql| sql.clone())
+        .collect();
+
+        self.execute_multiple(&rollback_cmds)
     }
 }
 
@@ -611,11 +643,14 @@ mod tests{
             .for_each(|(actual, expected)| assert_eq!(actual, expected));
     }
 
-
     #[test]
     #[serial]
     fn deletion_test() {
         let db = DataBase::from_env().unwrap();
+
+        for cmd in db.get_snapshot() {
+            println!("{:?}", cmd);
+        }
 
         let _env = DbEnv::new(
             db.get_deletion_cmds(),
@@ -626,4 +661,5 @@ mod tests{
 
         assert_eq!(actual, vec![])
     }
+
 }
