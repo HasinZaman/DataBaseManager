@@ -489,6 +489,18 @@ impl SQL {
         return Err(SQLError::Err(String::from("Failed to parse")))
     }
 
+    pub fn save_to_file(file_path: &str, queries: &Vec<SQL>) -> Result<(), std::io::Error> {
+        let mut file: File = File::create(file_path)?;
+
+        let mut content = String::new();
+
+        queries.iter()
+            .for_each(|query| content.push_str(&format!("{};\n", query.to_string())));
+
+        file.write(content.as_bytes())?;
+
+        Ok(())
+    }
 }
 
 impl DatabaseExecute for SQL{
@@ -620,11 +632,19 @@ mod tests{
             "ffffff"
         );
         
-        let actual = SQL::from_file(file_name_1);
         let expected = vec![
             SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
         ];
+        
+        let actual = SQL::from_file(file_name_1);
 
+        assert_eq!(
+            actual.unwrap(),
+            expected
+        );
+
+        let actual = SQL::new(&format!("--file:({} as S)", file_name_1));
+        let expected = SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2);").unwrap();
         assert_eq!(
             actual.unwrap(),
             expected
