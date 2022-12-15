@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 
 pub fn contents(cmd: &str) -> Result<String, Error> {
     lazy_static! {
-        static ref FILE_INPUT_REGEX: Regex = Regex::new("--file:\\(([a-zA-Z][a-zA-Z0-9:/._]+) as ([BS])\\)").unwrap();
+        static ref FILE_INPUT_REGEX: Regex = Regex::new("--file:\\(([a-zA-Z][a-zA-Z0-9:/_]+.[a-zA-Z]+) as ([BS])\\)").unwrap();
     };
 
     let mut cmd = cmd.to_string();
