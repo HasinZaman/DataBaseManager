@@ -8,10 +8,11 @@ use crossterm::event::{self, Event};
 use tui::{Terminal, backend::{CrosstermBackend}, layout::{Layout, Direction, Constraint}};
 use ui::{input::Input, gen_terminal, menu::Menu, renderable::Renderable, pages::{schema::{relation_list::RelationListPage, relation_page::RelationPage}, snapshot::SnapShotPage}};
 
-use crate::{ui::pages::{Pages, query::QueryPage}, backend::{sql::SQL, data_base::DatabaseExecute}};
+use crate::{ui::pages::{Pages, query::QueryPage}, backend::{sql::SQL, data_base::{DatabaseExecute, DataBase}, snapshot::SnapShotsFile}};
 
 pub mod ui;
 pub mod backend;
+pub mod test_tools;
 
 lazy_static!{
     static ref RELATIONS: Mutex<Vec<Relation>> = Mutex::new(Relation::get_relations().unwrap());
@@ -70,9 +71,14 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
     lazy_static!{
         static ref SCHEMA_TAB : Regex = Regex::new("[Ss][Hh][Oo][Ww] (.+)").unwrap();
     };
+    lazy_static!{
+        static ref FROM_FILE : Regex = Regex::new("^--file:\\(([a-zA-Z][a-zA-Z0-9:/_]+.[Ss][Qq][Ll]) as ([S])\\)$").unwrap();
+    }
     if SCHEMA_TAB.is_match(&cmd) {
         let capture = SCHEMA_TAB.captures(&cmd).unwrap().get(1).unwrap().as_str();
-        let relations = RELATIONS.lock().unwrap();
+        let mut relations = RELATIONS.lock().unwrap();
+
+        *relations = Relation::get_relations().unwrap();
 
         menu.select(0).unwrap();
 
@@ -136,7 +142,7 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
             }
         }
     }
-    else if let Ok(SQL::Select(query)) = SQL::from(&cmd) {
+    else if let Ok(SQL::Select(query)) = SQL::new(&cmd) {
         if let Ok(_) = query.execute(|_| ()) {
             menu.select(1).unwrap();
 
@@ -157,8 +163,26 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
         let mut last_page = LAST_PAGE.lock().unwrap();
         *last_page = Pages::SnapShot(SnapShotPage::default());
     }
-    else if let Ok(sql) = SQL::from(&cmd) {
-        let _result =sql.execute(|_| ());
+    else if FROM_FILE.is_match(&cmd) {
+        let file_path = {
+            let captures = FROM_FILE.captures(&cmd).unwrap();
+            let path = captures.get(1);
+
+            path.unwrap().as_str().to_string()
+        };
+        let cmds = SQL::from_file(&file_path);
+
+        match cmds {
+            Ok(cmds) => {
+                let db = DataBase::from_env().unwrap();
+
+                let _result = db.execute_multiple(&cmds);
+            },
+            Err(_) => {},
+        };
+    }
+    else if let Ok(sql) = SQL::new(&cmd) {
+        let _result = sql.execute(|_| ());
     }
     else {
         match menu.get_tab(){
@@ -198,28 +222,61 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
                 };
             },
             ui::menu::Tab::SnapShot => {
-                let cmd = cmd.to_ascii_lowercase();
-                let cmd: &str = &cmd;
+                let mut last_page = LAST_PAGE.lock().unwrap();
 
-                lazy_static!{
-                    static ref ADD_SNAPSHOT : Regex = Regex::new("^[Aa][Dd][Dd]$").unwrap();
-                };
-                lazy_static!{
-                    static ref ADD_SNAPSHOT_FILE : Regex = Regex::new("^[Aa][Dd][Dd] (.+)$").unwrap();
-                };
-                lazy_static!{
-                    static ref REMOVE_SNAPSHOT : Regex = Regex::new("^[Rr][Ee][Mm][Oo][Vv][Ee] (.+)$").unwrap();
-                };
-                lazy_static!{
-                    static ref ROLLBACK_SNAPSHOT : Regex = Regex::new("^[Rr][Oo][Ll][Ee][Bb][Aa][Cc][Kk] (.+)$").unwrap();
-                };
+                match &mut*last_page {
+                    Pages::SnapShot(snapshot) => {
+                        let cmd: &str = &cmd;
 
-                
+                        lazy_static!{
+                            static ref ADD_SNAPSHOT : Regex = Regex::new("^[Aa][Dd][Dd]$").unwrap();
+                        };
+                        lazy_static!{
+                            static ref NEXT_PAGE : Regex = Regex::new("^[Nn][Ee][Xx][Tt]$").unwrap();
+                        };
+                        lazy_static!{
+                            static ref PREV_PAGE : Regex = Regex::new("^[Pp][Rr][Ee][Vv]$").unwrap();
+                        };
+                        lazy_static!{
+                            static ref REMOVE_SNAPSHOT : Regex = Regex::new("^[Rr][Ee][Mm][Oo][Vv][Ee] (.+)$").unwrap();
+                        };
 
-                
-                //add snapshot
-                //remove snapshot
-                //rollback to
+                        lazy_static!{
+                            static ref ROLLBACK_SNAPSHOT : Regex = Regex::new("^[Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk] (.+)$").unwrap();
+                        };
+
+                        if ADD_SNAPSHOT.is_match(cmd) {
+                            let mut file = SnapShotsFile::default();
+        
+                            file.add_snapshot(DataBase::from_env().unwrap().into());
+        
+                            snapshot.update();
+                        }
+                        else if NEXT_PAGE.is_match(cmd) {
+                            let size: usize = unsafe {
+                                PAGE_SIZE.clone() as usize - 3usize
+                            };
+
+                            snapshot.next(size)
+                        }
+                        else if PREV_PAGE.is_match(cmd) {
+                            let size: usize = unsafe {
+                                PAGE_SIZE.clone() as usize - 3usize
+                            };
+
+                            snapshot.prev(size)
+                        }
+                        else if REMOVE_SNAPSHOT.is_match(cmd) {
+                            let cmd = REMOVE_SNAPSHOT.captures(cmd).unwrap().get(1).unwrap().as_str();
+                            snapshot.del(cmd);
+                        }
+                        else if ROLLBACK_SNAPSHOT.is_match(cmd) {
+                            let cmd = ROLLBACK_SNAPSHOT.captures(cmd).unwrap().get(1).unwrap().as_str();
+                            snapshot.rollback(cmd);
+                        }
+                    },
+                    _=>{}
+                };
             },
         }
     }
