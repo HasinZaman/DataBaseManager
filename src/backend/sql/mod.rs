@@ -8,15 +8,22 @@ use super::data_base::{DataBase, DatabaseExecute, DatabaseError};
 
 mod file_insertion;
 
+/// Represents possible errors that can occur when executing a SQL command.
 #[derive(Debug)]
 pub enum SQLError{
+    /// The command is not a valid SQL command.
     NotValidCMD,
+    /// The command is not a valid variant of the `SQL` enum.
     InvalidQuery{expected_variant: SQL},
+    /// There was an error connecting to the database.
     FailedToConnect(DatabaseError),
+    /// There was an error executing the command on the database.
     Execution(Error),
+    /// There was a general error with the command.
     Err(String)
 }
 
+/// Represents a data definition language (DDL) SQL command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DDL(pub String);
 impl Deref for DDL {
@@ -82,7 +89,13 @@ impl From<&DDL> for SQL{
         }
     }
 }
+impl From<&DDL> for SQLLanguage{
+    fn from(_: &DDL) -> Self {
+        SQLLanguage::DDL
+    }
+}
 
+/// Represents a data query language (DQL) SQL command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QDL(pub String);
 impl Deref for QDL {
@@ -139,7 +152,12 @@ impl From<&QDL> for SQL{
         }
     }
 }
-
+impl From<&QDL> for SQLLanguage{
+    fn from(_: &QDL) -> Self {
+        SQLLanguage::QDL
+    }
+}
+/// Represents a data modification language (DML) SQL command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QML(pub String);
 impl Deref for QML {
@@ -200,7 +218,12 @@ impl From<&QML> for SQL{
         }
     }
 }
-
+impl From<&QML> for SQLLanguage{
+    fn from(_: &QML) -> Self {
+        SQLLanguage::QML
+    }
+}
+/// Represents a data control language (DCL) SQL command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DCL(pub String);
 impl Deref for DCL {
@@ -259,6 +282,12 @@ impl From<&DCL> for SQL{
         }
     }
 }
+impl From<&DCL> for SQLLanguage{
+    fn from(_: &DCL) -> Self {
+        SQLLanguage::DCL
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SQL {
@@ -304,6 +333,25 @@ macro_rules! SQL_Parse {
 }
 
 impl SQL {
+    /// Parses an SQL command from a string.
+    ///
+    /// # Arguments
+    ///
+    /// * `query` - a string slice containing the SQL command to parse.
+    ///
+    /// /// # Example
+    ///
+    /// ```
+    /// use sql::SQL;
+    ///
+    /// let query = "SELECT * FROM users WHERE age > 25";
+    /// let sql = SQL::new(query).unwrap();
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// This function returns a `SQLError` variant if the command is invalid or if there is an error
+    /// inserting the contents of a file specified in the command (using the `@` syntax).
     pub fn new(query: &str) -> Result<SQL, SQLError> {
         
         let query = match file_insertion::contents(query) {
@@ -333,6 +381,7 @@ impl SQL {
         Result::Err(SQLError::NotValidCMD)
     }
 
+    /// Returns a borrow `DDL` variant of the `SQL` enum if it exists, otherwise returns `None`.
     pub fn ddl(&self) -> Option<&DDL> {
         match self {
             SQL::Create(ddl) |
@@ -343,6 +392,7 @@ impl SQL {
             _ => None,
         }
     }
+    /// Returns a mutable borrow of `DDL` variant of the `SQL` enum if it exists otherwise returns `None`.
     pub fn ddl_mut(&mut self) -> Option<&mut DDL> {
         match self {
             SQL::Create(ddl) |
@@ -354,12 +404,14 @@ impl SQL {
         }
     }
 
+    /// Returns a borrow `QDL` variant of the `SQL` enum if it exists, otherwise returns `None`.
     pub fn qdl(&self) -> Option<&QDL> {
         match self {
             SQL::Select(qdl) => Some(qdl),
             _ => None,
         }
     }
+    /// Returns a mutable borrow of `QDL` variant of the `SQL` enum if it exists otherwise returns `None`.
     pub fn qdl_mut(&mut self) -> Option<&mut QDL> {
         match self {
             SQL::Select(qdl) => Some(qdl),
@@ -367,6 +419,7 @@ impl SQL {
         }
     }
     
+    /// Returns a borrow `QML` variant of the `SQL` enum if it exists, otherwise returns `None`.
     pub fn qml(&self) -> Option<&QML> {
         match self{
             SQL::Insert(cmd) |
@@ -375,6 +428,7 @@ impl SQL {
             _ => None
         }
     }
+    /// Returns a mutable borrow of `QML` variant of the `SQL` enum if it exists, otherwise returns `None`.
     pub fn qml_mut(&mut self) -> Option<&mut QML> {
         match self{
             SQL::Insert(cmd) |
@@ -384,6 +438,7 @@ impl SQL {
         }
     }
 
+    /// Returns a borrow `DCL` variant of the `SQL` enum if it exists, otherwise returns `None`.
     pub fn dcl(&self) -> Option<&DCL> {
         match self {
             SQL::Grant(cmd) |
@@ -391,6 +446,7 @@ impl SQL {
             _ => None,
         }
     }
+    /// Returns a mutable borrow of `DCL` variant of the `SQL` enum if it exists, otherwise returns `None`.
     pub fn dcl_mut(&mut self) -> Option<&mut DCL> {
         match self {
             SQL::Grant(cmd) |
@@ -399,25 +455,65 @@ impl SQL {
         }
     }
 
+    /// Returns a enum of SQL language type
     pub fn get_language(&self) -> SQLLanguage {
         match &self {
-            SQL::Create(_) |
-            SQL::Alter(_) |
-            SQL::Drop(_) | 
-            SQL::Truncate(_) |
-            SQL::Show(_) => SQLLanguage::DDL,
+            SQL::Create(cmd) |
+            SQL::Alter(cmd) |
+            SQL::Drop(cmd) | 
+            SQL::Truncate(cmd) |
+            SQL::Show(cmd) => cmd.into(),
 
-            SQL::Select(_) => SQLLanguage::QDL,
+            SQL::Select(cmd) => cmd.into(),
 
-            SQL::Insert(_) |
-            SQL::Update(_) |
-            SQL::Delete(_)  => SQLLanguage::QML,
+            SQL::Insert(cmd) |
+            SQL::Update(cmd) |
+            SQL::Delete(cmd)  => cmd.into(),
 
-            SQL::Grant(_)  |
-            SQL::Revoke(_) => SQLLanguage::DCL,
+            SQL::Grant(cmd)  |
+            SQL::Revoke(cmd) => cmd.into(),
         }
     }
 
+    /// Returns vector of SQL from a file.
+    /// 
+    /// # Arguments
+    ///
+    /// * `file_path` - a string slice of file path.
+    /// 
+    /// # Example
+    ///
+    /// ```rust
+    /// let file_path = "file_parsing_multiple_cmds.sql";
+    /// 
+    /// let content = "                
+    /// --organizational tags\n
+    /// INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2);
+    /// INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2);
+    /// 
+    /// 
+    /// INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2);
+    /// "
+    /// 
+    /// let mut file = File::create(&file_name).unwrap();
+    /// file.write(&content.as_bytes()).unwrap();
+    /// 
+    /// let actual = SQL::from_file(file_path);
+    /// let expected = vec![
+    ///     SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2)").unwrap(),
+    ///     SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"5CFFA1\", \"Shader\", 2)").unwrap(),
+    ///     SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"FF5CBA\", \"GameJam\", 2)").unwrap(),
+    /// ];
+    /// 
+    /// assert_eq!(
+    ///     actual.unwrap(),
+    ///     expected
+    /// );
+    /// ```
+    /// 
+    /// # Errors
+    /// 
+    /// This function returns a `std::io::Error` if the file cannot be loaded
     pub fn from_file(file_path: &str) -> Result<Vec<SQL>, std::io::Error> {
         let mut file: File = File::open(file_path)?;
 
@@ -489,6 +585,16 @@ impl SQL {
         return Err(SQLError::Err(String::from("Failed to parse")))
     }
 
+    /// Saves a vector of SQL commands into a file
+    /// 
+    /// # Arguments
+    /// 
+    /// * `file_path` - a string slice of a file path
+    /// * `queries` - a vector of `SQL`
+    /// 
+    /// # Errors
+    /// 
+    /// This function return `std::io::Error` if the function fails to create a file with given parameters
     pub fn save_to_file(file_path: &str, queries: &Vec<SQL>) -> Result<(), std::io::Error> {
         let mut file: File = File::create(file_path)?;
 
