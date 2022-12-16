@@ -8,15 +8,30 @@ use crate::backend::{data_base::DataBase, sql::{SQL, QML, DDL, QDL}};
 
 use super::RelationMethods;
 
-/// Table struct defines the structure of a relation table
+/// A struct representing a table in a relational database
 #[derive(Clone, Debug)]
 pub struct Table{
+    /// The name of the table.
     pub name: String,
+    /// A vector of `Attribute`s representing the columns of the table.
     pub attributes: Vec<Attribute>,
+    /// The index of the primary key attribute in the `attributes` vector, if one exists.
     pub primary_key: Option<usize>,
 }
 
 impl Table {
+    /// Returns a `Table` with the given name, created from the database.
+    /// Return None if the table does not exist.
+    ///
+    /// # Arguments
+    ///
+    /// * `table_name` - The name of an already existing table.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let table = Table::from_db("employees").unwrap();
+    /// ```
     pub fn from_db(table_name: &str) -> Option<Table> {
         //println!("\n\n");
         match DataBase::from_env() {
@@ -74,6 +89,15 @@ impl Table {
         }
     }
 
+    /// Returns a vector of foreign key tuples for the table.
+    ///
+    /// The tuples contain the name of the table and the name of the attribute that the foreign key references.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let foreign_keys = table.get_foreign_keys().unwrap();
+    /// ```
     pub fn get_foreign_keys(&self) -> Option<Vec<(String, String)>> {
 
         let foreign_key: Vec<(String, String)> = self.attributes
@@ -103,10 +127,144 @@ impl Table {
         Some(foreign_key)
     }
 
-    pub fn create_unchecked(&self) -> DDL {
-        DDL(self.to_string())
-    }
-
+    /// Returns a `QML` representing an `INSERT` statement for the table with the given values.
+    ///
+    /// # Arguments
+    ///
+    /// * `values` - A `HashMap` of column names and values to insert into the table.
+    ///
+    /// # Examples
+    ///
+    /// Creating an insertion statement where all the columns have an inserted value
+    /// ```rust
+    /// let table = Table{
+    ///     name: String::from("table_1"),
+    ///     attributes: vec![
+    ///         Attribute{
+    ///             name: String::from("PersonID"),
+    ///             data_type: AttributeType::Int(16),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("LastName"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("FirstName"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("Address"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("City"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///     ],
+    ///     primary_key: None,
+    /// };
+    /// 
+    /// let mut values = HashMap::new();
+    /// 
+    /// values.insert(String::from("PersonID"), String::from("23"));
+    /// values.insert(String::from("LastName"), String::from("'Doe'"));
+    /// values.insert(String::from("FirstName"), String::from("'John'"));
+    /// values.insert(String::from("Address"), String::from("'1st Street'"));
+    /// values.insert(String::from("City"), String::from("'Night City'"));
+    /// 
+    /// let actual = table.insert(&values);
+    /// assert_eq!(actual, Some(QML(String::from("INSERT INTO table_1(PersonID,LastName,FirstName,Address,City) VALUES (23,'Doe','John','1st Street','Night City')"))));
+    /// ```
+    ///
+    /// Creating an insertion statement where some the columns have an inserted value
+    /// ```rust
+    /// let table = Table{
+    ///     name: String::from("table_1"),
+    ///     attributes: vec![
+    ///         Attribute{
+    ///             name: String::from("PersonID"),
+    ///             data_type: AttributeType::Int(16),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("LastName"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("FirstName"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("Address"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("City"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///     ],
+    ///     primary_key: None,
+    /// };
+    /// 
+    /// let mut values = HashMap::new();
+    /// 
+    /// values.insert(String::from("PersonID"), String::from("23"));
+    /// values.insert(String::from("LastName"), String::from("'Doe'"));
+    /// values.insert(String::from("FirstName"), String::from("'John'"));
+    /// 
+    /// let actual = table.insert(&values);
+    /// assert_eq!(actual, Some(QML(String::from("INSERT INTO table_1(PersonID,LastName,FirstName) VALUES (23,'Doe','John')"))));
+    /// ```
+    ///
+    /// Failed insertion creation results in `Option::None` being returned
+    /// ```rust
+    /// let table = Table{
+    ///     name: String::from("table_1"),
+    ///     attributes: vec![
+    ///         Attribute{
+    ///             name: String::from("PersonID"),
+    ///             data_type: AttributeType::Int(16),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("LastName"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("FirstName"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("Address"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///         Attribute{
+    ///             name: String::from("City"),
+    ///             data_type: AttributeType::VarChar(255),
+    ///             constraint: HashSet::new()
+    ///         },
+    ///     ],
+    ///     primary_key: None,
+    /// };
+    /// 
+    /// let mut values = HashMap::new();
+    ///
+    /// let actual = table.insert(&values);
+    /// 
+    /// assert_eq!(actual, None);
+    /// ```
     pub fn insert(&self, values: &HashMap<String, String>) -> Option<QML>{//should be turned into Result<SQL, ERROR why couldn't be parsed>
         let (columns, values) = self.attributes
             .iter()
@@ -189,15 +347,18 @@ impl RelationMethods for Table {
         DDL(format!("DROP TABLE {}", self.name))
     }
     fn create(&self) -> DDL{
-        SQL::new(&self.to_string()).unwrap().ddl().unwrap().clone()
+        DDL(self.to_string())
     }
 }
 
-/// Attribute defines the columns of a Table
+/// An attribute in a table of a relational database
 #[derive(Clone, Debug)]
 pub struct Attribute{
+    /// The name of the attribute.
     pub name: String,
+    /// The data type of the attribute.
     pub data_type: AttributeType,
+    /// A vector of Constraints on the attribute.
     pub constraint: HashSet<Constraint>
 }
 
@@ -271,6 +432,7 @@ impl Attribute {
         )
     }
 
+    /// Returns a string representation of the attribute's schema.
     pub fn schema_fmt(&self) -> String {
         format!("{} {}", self.name, self.data_type)
     }
@@ -307,12 +469,18 @@ impl fmt::Display for Attribute {
 /// Constraint defines the restrictions of an attribute
 #[derive(Clone, Hash, Eq, Debug)]
 pub enum Constraint{
+    /// The attribute must not contain a null value.
     NotNull,
+    /// The attribute must contain a unique value.
     Unique,
+    /// The attribute is a foreign key that references another attribute in a different table.
     ForeignKey{
+        /// The name of the table that the foreign key attribute references.
         table_name: String,
+        /// The name of the attribute that the foreign key references.
         attribute_name: String
     },
+    /// The attribute is an auto-incrementing integer.
     AutoIncrement,
 }
 impl PartialEq for Constraint {
@@ -424,6 +592,7 @@ macro_rules! regex_check {
 }
 
 impl AttributeType {
+    /// Returns the `AttributeType` variant corresponding to the given string.
     fn from(raw_str: &str) -> Option<AttributeType> {
         regex_check!(r"CHAR\((\d+)\)", raw_str, Char, u8);
         regex_check!(r"VARCHAR\((\d+)\)", raw_str, VarChar, u16);
@@ -460,6 +629,7 @@ impl AttributeType {
         return None
     }
 }
+
 impl fmt::Display for AttributeType{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
