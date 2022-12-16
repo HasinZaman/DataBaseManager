@@ -1,10 +1,10 @@
-use crate::backend::relation::Select;
+use crate::backend::relation::RelationMethods;
 
 use std::{fmt, env::{self, VarError}, collections::HashMap};
 
 use mysql::{prelude::*, Opts, Conn, Row, Error, TxOpts};
 
-use super::{sql::{SQL, QDL}, relation::{Relation, paths::{get_dependency_graph, get_generation_path}}};
+use super::{sql::{SQL, QDL}, relation::{Relation, paths::{get_dependency_tree, get_generation_path}}};
 
 pub trait DatabaseExecute{
     type RowError;
@@ -165,7 +165,7 @@ impl DataBase {
     pub fn get_snapshot(&self) -> Vec<SQL> {
         let relations = Relation::get_relations().unwrap();
 
-        let dependencies = get_dependency_graph(&relations);
+        let dependencies = get_dependency_tree(&relations);
 
         let generation_order = get_generation_path(&relations, &dependencies);
 
@@ -246,7 +246,7 @@ impl DataBase {
     pub fn get_deletion_cmds(&self) -> Vec<SQL> {
         let relations = Relation::get_relations().unwrap();
 
-        let dependencies = get_dependency_graph(&relations);
+        let dependencies = get_dependency_tree(&relations);
 
         let generation_order = get_generation_path(&relations, &dependencies);
 

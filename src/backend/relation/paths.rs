@@ -1,18 +1,77 @@
 use std::collections::{HashMap, LinkedList};
 
 use lazy_static::lazy_static;
-use petgraph::{Graph, adj::NodeIndex, visit::NodeIndexable, Incoming, Outgoing};
+use petgraph::{Graph, adj::NodeIndex, visit::NodeIndexable, Incoming, Outgoing, Directed};
 use regex::Regex;
 
 use super::{Relation, view::View, table::Table};
 
-pub type DependencyGraph = Graph<NodeIndex, NodeIndex>;
+/// DependencyTree is a forest graph of relation nodes and the dependency relationship between relation nodes
+pub type DependencyTree = Graph<NodeIndex, NodeIndex, Directed>;
 
-pub fn get_dependency_graph(relations: &Vec<Relation>) -> DependencyGraph {
+/// Returns a dependency tree for the given relations.
+///
+/// # Arguments
+///
+/// * `relations` - A vector of relations to create the dependency graph for.
+///
+/// # Return 
+/// 
+/// * `DependencyTree` - A directed graph of dependencies tree of relations
+/// 
+/// # Examples
+/// ```rust
+/// let relations: Vec<Relation> = vec![
+///     Relation::Table(
+///         Table{
+///             name: String::from("table_1"),
+///             attributes: vec![
+///                 Attribute{
+///                     name: String::from("attr_1"),
+///                     data_type: AttributeType::Text(10),
+///                     constraint: HashSet::new()
+///                 }
+///             ],
+///             primary_key: Some(0),
+///         }
+///     ),
+///     Relation::Table(
+///         Table{
+///             name: String::from("table_2"),
+///             attributes: vec![
+///                 Attribute{
+///                     name: String::from("attr_2"),
+///                     data_type: AttributeType::Text(10),
+///                     constraint: HashSet::from([
+///                             Constraint::ForeignKey{
+///                                 table_name: String::from("table_1"),
+///                                 attribute_name: String::from("attr_1")
+///                             }
+///                         ]
+///                     )
+///                 }
+///                 foreign_relation!["table_1"]
+///             ],
+///             primary_key: Some(0),
+///         }
+///     ),
+/// ];
+/// 
+/// let actual = get_dependency_graph(&relations);
+/// 
+/// let mut expected: DependencyTree = Graph::new();
+/// let v1 = expected.add_node(0);
+/// let v2 = expected.add_node(1);
+/// 
+/// expected.extend_with_edges(&[(v1,v2)]);
+/// 
+/// assert_eq_graph!(actual, expected, relations);
+/// ```
+pub fn get_dependency_tree(relations: &Vec<Relation>) -> DependencyTree {
     let name_to_index: HashMap<String, usize> = name_to_index_hashmap(relations);
     let mut index_to_node_index: HashMap<usize, NodeIndex> = HashMap::new();
 
-    let mut dependency_tree: DependencyGraph = Graph::new();
+    let mut dependency_tree: DependencyTree = Graph::new();
 
     let edges: Vec<(NodeIndex, NodeIndex)> = {
         let mut edges: Vec<(usize,usize)> = Vec::new();
@@ -155,7 +214,60 @@ fn add_table_edges(table: &Table, edges: &mut Vec<(usize, usize)>, index: usize,
     }
 }
 
-pub fn get_generation_path(relations: &Vec<Relation>, dependency_tree: &DependencyGraph) -> Vec<usize> {
+/// Returns a possible order of indexes of `relations` to generate relations without conflicts due to foreign key constraints and views
+///
+/// # Arguments
+///
+/// * `relations` - A reference to a vector of `Relation`s.
+/// * `dependency_tree` - A dependency tree of `relations` parameter.
+///
+/// # Examples
+///
+/// ```rust
+/// let relations: Vec<Relation> = vec![
+///     Relation::Table(
+///         Table{
+///             name: String::from("table_1"),
+///             attributes: vec![
+///                 Attribute{
+///                     name: String::from("attr_1"),
+///                     data_type: AttributeType::Text(10),
+///                     constraint: HashSet::new()
+///                 }
+///             ],
+///             primary_key: Some(0),
+///         }
+///     ),
+///     Relation::Table(
+///         Table{
+///             name: String::from("table_2"),
+///             attributes: vec![
+///                 Attribute{
+///                     name: String::from("attr_2"),
+///                     data_type: AttributeType::Text(10),
+///                     constraint: HashSet::from([
+///                             Constraint::ForeignKey{
+///                                 table_name: String::from("table_1"),
+///                                 attribute_name: String::from("attr_1")
+///                             }
+///                         ]
+///                     )
+///                 }
+///                 foreign_relation!["table_1"]
+///             ],
+///             primary_key: Some(0),
+///         }
+///     ),
+/// ];
+/// 
+/// let dependency_tree = get_dependency_graph(&relations);
+/// 
+/// let actual = get_generation_path(&relations, &dependency_tree);
+/// 
+/// assert_path!(relations, dependency_tree, actual);
+/// ```
+/// 
+pub fn get_generation_path(relations: &Vec<Relation>, dependency_tree: &DependencyTree) -> Vec<usize> {
     let mut visited = vec![false; relations.len()];
 
     let mut order = LinkedList::new();
@@ -180,7 +292,7 @@ pub fn get_generation_path(relations: &Vec<Relation>, dependency_tree: &Dependen
     result
 }
 
-fn add_dependency(relations: &Vec<Relation>, dependency_tree: &DependencyGraph, visited: &mut Vec<bool>, node: usize) -> Option<LinkedList<usize>> {
+fn add_dependency(relations: &Vec<Relation>, dependency_tree: &DependencyTree, visited: &mut Vec<bool>, node: usize) -> Option<LinkedList<usize>> {
     if visited[node] {
         return None;
     }
@@ -243,7 +355,7 @@ mod tests{
         relation::{
             Relation,
             table::{Table, Attribute, AttributeType, Constraint},
-            paths::{get_dependency_graph, DependencyGraph},
+            paths::{get_dependency_tree, DependencyTree},
             view::View
         },
         sql::SQL
@@ -346,9 +458,9 @@ mod tests{
             ),
         ];
 
-        let actual = get_dependency_graph(&relations);
+        let actual = get_dependency_tree(&relations);
 
-        let mut expected: DependencyGraph = Graph::new();
+        let mut expected: DependencyTree = Graph::new();
         let v1 = expected.add_node(0);
         let v2 = expected.add_node(1);
 
@@ -380,9 +492,9 @@ mod tests{
             ),
         ];
 
-        let actual = get_dependency_graph(&relations);
+        let actual = get_dependency_tree(&relations);
         
-        let mut expected: DependencyGraph = Graph::new();
+        let mut expected: DependencyTree = Graph::new();
         let _v1 = expected.add_node(0);
         let _v2 = expected.add_node(1);
 
@@ -422,9 +534,9 @@ mod tests{
             ),
         ];
 
-        let actual = get_dependency_graph(&relations);
+        let actual = get_dependency_tree(&relations);
 
-        let mut expected: DependencyGraph = Graph::new();
+        let mut expected: DependencyTree = Graph::new();
         let v1 = expected.add_node(0);
         let v2 = expected.add_node(1);
         let v3 = expected.add_node(2);
@@ -454,9 +566,9 @@ mod tests{
             )
         ];
 
-        let actual = get_dependency_graph(&relations);
+        let actual = get_dependency_tree(&relations);
 
-        let mut expected: DependencyGraph = Graph::new();
+        let mut expected: DependencyTree = Graph::new();
         let v1 = expected.add_node(0);
         let v2 = expected.add_node(1);
 
@@ -495,9 +607,9 @@ mod tests{
 
         ];
 
-        let actual = get_dependency_graph(&relations);
+        let actual = get_dependency_tree(&relations);
 
-        let mut expected: DependencyGraph = Graph::new();
+        let mut expected: DependencyTree = Graph::new();
         let v1 = expected.add_node(0);
         let v2 = expected.add_node(1);
         let v3 = expected.add_node(2);
@@ -546,9 +658,9 @@ mod tests{
 
         ];
 
-        let actual = get_dependency_graph(&relations);
+        let actual = get_dependency_tree(&relations);
 
-        let mut expected: DependencyGraph = Graph::new();
+        let mut expected: DependencyTree = Graph::new();
         let v1 = expected.add_node(0);
         let v2 = expected.add_node(1);
         let v3 = expected.add_node(2);
@@ -621,7 +733,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
@@ -651,7 +763,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
@@ -681,7 +793,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
@@ -720,7 +832,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
@@ -759,7 +871,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
@@ -798,7 +910,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
@@ -846,7 +958,7 @@ mod tests{
             ),
         ];
 
-        let dependency_tree = get_dependency_graph(&relations);
+        let dependency_tree = get_dependency_tree(&relations);
 
         let actual = get_generation_path(&relations, &dependency_tree);
 
