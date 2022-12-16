@@ -3,8 +3,33 @@ use std::{fs::File, io::{Read, Error}};
 use regex::{Regex, Captures};
 use lazy_static::lazy_static;
 
+/// Replaces occurrences of the pattern "--file:([file_path] as [read_type])" in `cmd`
+/// with the contents of the specified file.
+///
+/// The file path must contain only alphabetical, numeric, forward-slash (/), and underscore (_)
+/// characters, and must end in a file extension consisting of one or more alphabetical characters.
+///
+/// The read type must be either "B" for binary data or "S" for a string.
+///
+/// If the file cannot be opened or read, an error is returned.
+///
+/// # Examples
+///
+/// ```rust
+/// let file_path = "test.txt";
+/// let file_contents = "Hello, world!";
+///
+/// let mut file = File::create(file_path)?;
+/// file.write_all(file_contents.as_bytes())?;
+///
+/// let cmd = format!("--file:({} as S)", file_path);
+/// let contents = contents(&cmd)?;
+///
+/// assert_eq!(contents, file_contents);
+/// ```
 pub fn contents(cmd: &str) -> Result<String, Error> {
     lazy_static! {
+        /// Regular expression for matching the pattern "--file:([file_path] as [read_type])".
         static ref FILE_INPUT_REGEX: Regex = Regex::new("--file:\\(([a-zA-Z][a-zA-Z0-9:/_]+.[a-zA-Z]+) as ([BS])\\)").unwrap();
     };
 
