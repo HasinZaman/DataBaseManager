@@ -6,7 +6,7 @@ use regex::Regex;
 
 use crate::backend::{data_base::DataBase, sql::{SQL, QML, DDL, QDL}};
 
-use super::Select;
+use super::RelationMethods;
 
 /// Table struct defines the structure of a relation table
 #[derive(Clone, Debug)]
@@ -103,10 +103,6 @@ impl Table {
         Some(foreign_key)
     }
 
-    pub fn create(&self) -> DDL{
-        SQL::new(&self.to_string()).unwrap().ddl().unwrap().clone()
-    }
-
     pub fn create_unchecked(&self) -> DDL {
         DDL(self.to_string())
     }
@@ -161,9 +157,6 @@ impl Table {
         Some(QML(format!("INSERT INTO {}({}) VALUES ({})", &self.name, &columns[1..m1], &values[1..m2])))
     }
 
-    pub fn drop(&self) -> DDL{
-        DDL(format!("DROP TABLE {}", self.name))
-    }
 }
 
 impl Display for Table {
@@ -188,9 +181,15 @@ impl Display for Table {
     }
 }
 
-impl Select for Table {
+impl RelationMethods for Table {
     fn select(&self) -> QDL {
         QDL(format!("SELECT * FROM {}", self.name))
+    }
+    fn drop(&self) -> DDL{
+        DDL(format!("DROP TABLE {}", self.name))
+    }
+    fn create(&self) -> DDL{
+        SQL::new(&self.to_string()).unwrap().ddl().unwrap().clone()
     }
 }
 
@@ -507,7 +506,7 @@ mod tests {
     #![allow(unused_imports)]
     use std::collections::{HashSet, HashMap};
 
-    use crate::{backend::sql::QML, ui::menu::Tab};
+    use crate::{backend::{sql::QML, relation::RelationMethods}, ui::menu::Tab};
 
     use super::{Table, Attribute, AttributeType, Constraint};
 

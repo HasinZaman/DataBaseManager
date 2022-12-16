@@ -10,11 +10,19 @@ pub mod table;
 pub mod view;
 pub mod paths;
 
-pub trait Select {
+/// A trait representing methods for generating SQL statements for relations.
+pub trait RelationMethods {
+    /// Returns a `QDL` representing a `SELECT` statement for the relation.
     fn select(&self) -> QDL;
+    /// Returns a `DDL` representing a `DROP` statement for the relation.
+    fn drop(&self) -> DDL;
+    /// Returns a `DDL` representing a `CREATE` statement for the relation.
+    fn create(&self) -> DDL;
 }
 
-//Relation Defines the two relations that can exist in a MySql database
+/// An enumeration representing a relation.
+///
+/// A relation can either be a `Table` or a `View`.
 #[derive(Clone, Debug)]
 pub enum Relation{
     Table(Table),
@@ -22,6 +30,11 @@ pub enum Relation{
 }
 
 impl Relation {
+    /// Returns a vector of `Relation`s from the database.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if there is a problem accessing the database or executing the required queries.
     pub fn get_relations() -> Result<Vec<Relation>, Error> {
         match DataBase::from_env() {
             Ok(db) => {
@@ -77,34 +90,33 @@ impl Relation {
             }
         }
     }
-    /// name method allows for easy access to name of relation from table or query
+    
+    /// Returns the name of the relation as a `String`.
     pub fn name(&self) -> String {
         match self {
             Relation::Table(table) => table.name.clone(),
             Relation::View(view) => view.name.clone()
         }
     }
+}
 
-    pub fn create(&self) -> DDL {
-        match self {
-            Relation::Table(table) => table.create(),
-            Relation::View(view) => SQL::new(&format!("CREATE VIEW {} AS {}", &self.name(), &*view.query)).unwrap().ddl().unwrap().clone(),
+impl RelationMethods for Relation{
+    fn select(&self) -> QDL {
+        match self{
+            Relation::Table(table) => table.select(),
+            Relation::View(view) => view.select(),
         }
     }
-
-    pub fn drop(&self) -> DDL {
+    fn drop(&self) -> DDL {
         match self {
             Relation::Table(table) => table.drop(),
             Relation::View(view) => view.drop(),
         }
     }
-}
-
-impl Select for Relation{
-    fn select(&self) -> QDL {
-        match self{
-            Relation::Table(table) => table.select(),
-            Relation::View(view) => view.select(),
+    fn create(&self) -> DDL {
+        match self {
+            Relation::Table(table) => table.create(),
+            Relation::View(view) => view.create(),
         }
     }
 }

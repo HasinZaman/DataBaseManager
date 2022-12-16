@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 
 use crate::backend::{ sql::{QDL, SQL, DDL}, data_base::DataBase};
 
-use super::Select;
+use super::RelationMethods;
 
 #[derive(Clone, Debug)]
 pub struct View{
@@ -53,14 +53,17 @@ impl View {
             query: query
         }
     }
-
-    pub fn drop(&self) -> DDL{
-        DDL(format!("DROP VIEW {}", self.name))
-    }
 }
 
-impl Select for View{
+impl RelationMethods for View{
     fn select(&self) -> QDL {
         QDL(format!("SELECT * FROM {}", self.name))
+    }
+    fn drop(&self) -> DDL{
+        DDL(format!("DROP VIEW {}", self.name))
+    }
+
+    fn create(&self) -> DDL {
+        SQL::new(&format!("CREATE VIEW {} AS {}", self.name, *self.query)).unwrap().ddl().unwrap().clone()
     }
 }
