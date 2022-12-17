@@ -1,3 +1,4 @@
+use log::info;
 use regex::Regex;
 use lazy_static::lazy_static;
 
@@ -24,7 +25,7 @@ impl View {
                 let tmp_str: String = row.unwrap().get(1).unwrap();
 
                 lazy_static! {
-                    static ref VIEW_REGEX : Regex = Regex::new("[sS][eE][lL][eE][cC][tT] [a-zA-Z0-9`., ()=]+").unwrap();
+                    static ref VIEW_REGEX : Regex = Regex::new("[sS][eE][lL][eE][cC][tT] .+").unwrap();
                 };
 
                 VIEW_REGEX.captures(&tmp_str)
@@ -38,6 +39,7 @@ impl View {
 
         match tmp.get(0) {
             Some(query) => {
+                //info!("View::from_db - {:?}", query);
                 Some(
                     View {
                         name: name.to_string(),

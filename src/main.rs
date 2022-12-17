@@ -1,5 +1,14 @@
 use std::{io::Stdout, sync::Mutex};
 
+use log::{LevelFilter, info};
+use log4rs::{
+    append::{
+        file::FileAppender,
+    },
+    config::{Appender, Config, Root},
+    encode::pattern::PatternEncoder,
+};
+
 use regex::Regex;
 use lazy_static::lazy_static;
 
@@ -30,6 +39,22 @@ lazy_static!(
 static mut PAGE_SIZE: u16 = 0;
 
 fn main() {
+    let logfile = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .build(".log")
+        .unwrap();
+    
+    let config = Config::builder()
+        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .build(
+            Root::builder()
+                .appender("logfile")
+                .build(LevelFilter::Trace),
+        )
+        .unwrap();
+
+    let _handle = log4rs::init_config(config).unwrap();
+
     let mut terminal = gen_terminal();
     let _result= terminal.show_cursor();
 
@@ -143,18 +168,27 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
         }
     }
     else if let Ok(SQL::Select(query)) = SQL::new(&cmd) {
+        info!("Select tab: {:?}", query);
+        match query.execute(|_| ()) {
+            Ok(_) => {
+                menu.select(1).unwrap();
+
+                let mut page = QueryPage::new(&query);
+                let size: usize = unsafe {
+                    PAGE_SIZE.clone() as usize - 3usize
+                };
+
+                page.update(size);
+
+                let mut last_page = LAST_PAGE.lock().unwrap();
+                *last_page = Pages::Query(page);
+            },
+            Err(err) => {
+                log::error!("Failed to query({:?}): {:?}", query, err)
+            },
+        }
         if let Ok(_) = query.execute(|_| ()) {
-            menu.select(1).unwrap();
-
-            let mut page = QueryPage::new(&query);
-            let size: usize = unsafe {
-                PAGE_SIZE.clone() as usize - 3usize
-            };
-
-            page.update(size);
-
-            let mut last_page = LAST_PAGE.lock().unwrap();
-            *last_page = Pages::Query(page);
+            
         }
     }
     else if cmd.to_ascii_lowercase() == "snapshot" {

@@ -1,5 +1,6 @@
 use std::{cmp::{max, min}};
 
+use log::info;
 use regex::{Regex, Captures};
 use lazy_static::lazy_static;
 
@@ -61,7 +62,8 @@ impl QueryPage {
 
         let result: Result<Vec<Option<bool>>, crate::backend::sql::SQLError> = self.get_query(row_count)
             .execute(
-                |row| {
+            |row| {
+                info!("row - {:?}", row);    
                 let row = row.unwrap();
 
                 let mut row_tmp: Vec<String> = Vec::new();

@@ -1,6 +1,7 @@
 use std::collections::{HashMap, LinkedList};
 
 use lazy_static::lazy_static;
+use log::info;
 use petgraph::{Graph, adj::NodeIndex, visit::NodeIndexable, Incoming, Outgoing, Directed};
 use regex::Regex;
 
@@ -147,9 +148,17 @@ fn add_view_edges(view: &View, name_to_index: &HashMap<String, usize>, edges: &m
             query = JOIN.replace_all(&query, ", ").to_string();
         }
 
+        lazy_static!{
+            static ref QUOTATION_MARK : Regex = Regex::new("`").unwrap();
+        };
+
+        if QUOTATION_MARK.is_match(&query) {
+            query = QUOTATION_MARK.replace_all(&query, "").to_string();
+        }
         query
     };
     
+    info!("ADD VIEW - {}", query);
 
     let dependencies = {
         lazy_static!{

@@ -157,11 +157,10 @@ impl RelationListPage {
         }
     }
 
-    fn get_view_row(&self, column: &mut [Cell; 3], view: &crate::backend::relation::view::View) {
+    fn get_view_row(&self, column: &mut [Cell; 3], view: &crate::backend::relation::view::View, column_length: &mut (u16, u16, u16)) {
         column[0] = Cell::from("View");
-        column[2] = Cell::from(
-            Spans::from(
-                {
+        column[2] = Cell::from({
+            let spans = Spans::from({
                     let mut words: Vec<Span> = view.query.to_string()
                         .split(" ")
                         .map(
@@ -183,8 +182,13 @@ impl RelationListPage {
     
                     words
                 }
-            )
-        );
+            );
+
+            
+            column_length.2 = max(column_length.2, spans.width() as u16);
+
+            spans
+        });
     }
 }
 
@@ -210,7 +214,7 @@ impl <'a>Renderable for RelationListPage{
 
                             match r {
                                 Relation::Table(table) => self.get_table_row(&mut column, table, &mut column_length),
-                                Relation::View(view) => self.get_view_row(&mut column, view),
+                                Relation::View(view) => self.get_view_row(&mut column, view, &mut column_length),
                             };
 
                             column

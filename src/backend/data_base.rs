@@ -123,7 +123,14 @@ impl DataBase {
 
         let mut tx = conn.start_transaction(TxOpts::default())?;
 
-        let statement = tx.prep(cmd.to_string())?;
+        let statement = tx.prep(cmd.to_string());
+
+        if let Err(err) = statement {
+            log::error!("{:?}", err);
+            return Err(err);
+        }
+
+        let statement = statement.unwrap();
 
         let mut rows: Vec<E> = Vec::new();
 
@@ -159,7 +166,7 @@ impl DataBase {
 
         for sql in commands{
             let statement = tx.prep(sql.to_string())?;
-
+            
             if let Err(err) = tx.exec_iter(&statement, ()) {
                 //let _result = &tx.rollback();
                 return Err(err)
