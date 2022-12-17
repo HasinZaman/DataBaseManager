@@ -169,6 +169,7 @@ impl DataBase {
             
             if let Err(err) = tx.exec_iter(&statement, ()) {
                 //let _result = &tx.rollback();
+                log::error!("Failed to execute command({}) - Err:{:?}", sql.to_string(), err);
                 return Err(err)
             }
             

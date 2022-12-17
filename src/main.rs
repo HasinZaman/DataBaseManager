@@ -93,6 +93,7 @@ fn update_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>, menu: &Men
 }
 
 fn get_cmd(cmd: String, menu: &mut Menu) {
+    info!("CMD:{}", cmd);
     lazy_static!{
         static ref SCHEMA_TAB : Regex = Regex::new("[Ss][Hh][Oo][Ww] (.+)").unwrap();
     };
@@ -118,11 +119,12 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
         };
 
         if ALL_SCHEMA.is_match(capture) {
-            //println!("All tarbles");
+            info!("Show all schema");
             let mut last_page = LAST_PAGE.lock().unwrap();
             *last_page = Pages::RelationList(RelationListPage::from(&relations));
         }
         else if ALL_TABLES.is_match(capture) {
+            info!("Show all tables schema");
             let relations: Vec<Relation> = relations.iter()
                 .filter(
                     |relation| {
@@ -138,6 +140,7 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
             *last_page = Pages::RelationList(RelationListPage::from(&relations));
         }
         else if ALL_VIEWS.is_match(capture) {
+            info!("Show all views schema");
             let relations: Vec<Relation> = relations.iter()
                 .filter(
                     |relation| {
@@ -162,6 +165,7 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
                 .collect();
             
             if relations.len() == 1 {
+                info!("Show specific schema:{}", &relations[0].name());
                 let mut last_page = LAST_PAGE.lock().unwrap();
                 *last_page = Pages::Relation(RelationPage::new(&relations[0]));
             }
@@ -192,12 +196,14 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
         }
     }
     else if cmd.to_ascii_lowercase() == "snapshot" {
+        info!("Snapshot tab");
         menu.select(2).unwrap();
 
         let mut last_page = LAST_PAGE.lock().unwrap();
         *last_page = Pages::SnapShot(SnapShotPage::default());
     }
     else if FROM_FILE.is_match(&cmd) {
+        info!("From file: {}", &cmd);
         let file_path = {
             let captures = FROM_FILE.captures(&cmd).unwrap();
             let path = captures.get(1);
@@ -208,11 +214,14 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
 
         match cmds {
             Ok(cmds) => {
+                info!("cmds: {:?}", &cmds);
                 let db = DataBase::from_env().unwrap();
 
                 let _result = db.execute_multiple(&cmds);
             },
-            Err(_) => {},
+            Err(err) => {
+                log::error!("Failed to execute: {:?}", err);
+            },
         };
     }
     else if let Ok(sql) = SQL::new(&cmd) {
