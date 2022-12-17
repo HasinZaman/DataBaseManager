@@ -12,9 +12,12 @@ pub trait DatabaseExecute{
     fn execute<T,F>(&self, row_map: F) -> Result<Vec<T>, Self::RowError> where F : FnMut(Result<Row, Error>) -> T;
 }
 
+/// An enum representing errors that may occur when interacting with a database.
 #[derive(Debug)]
 pub enum DatabaseError{
+    /// An error occurred while attempting to load an environment variable.
     FailedToLoadENVVar(VarError),
+    /// A general error occurred while interacting with the database.
     Error(String)
 }
 
@@ -29,16 +32,25 @@ macro_rules! load_env_var {
     };
 }
 
+/// A struct representing a database connection.
 #[derive(Debug)]
 pub struct DataBase {
+    /// The hostname of the database.
     host: String,
+    /// The port of the database.
     port: String,
+    /// The name of the database.
     name: String,
+    /// The username to use when connecting to the database.
     username: String,
+    /// The password to use when connecting to the database.
     password: String,
 }
 
 impl DataBase {
+    /// Creates a new `DataBase` with the given connection information.
+    ///
+    /// Returns `Some(DataBase)` if the connection was successful, or `None` if the connection failed.
     pub fn new(host: String, port: String, name: String, username: String, password: String) -> Option<DataBase> {
         let db = DataBase { host: host, port: port, name: name, username: username, password: password };
 
@@ -48,6 +60,9 @@ impl DataBase {
         }
     }
 
+    /// Attempts to create a new `DataBase` by loading the necessary connection information from environment variables.
+    ///
+    /// Returns a `Result` with an error of type `DatabaseError` if the connection information could not be loaded or the connection failed.
     pub fn from_env() -> Result<DataBase, DatabaseError> {
 
         let db = DataBase::new(
@@ -64,6 +79,7 @@ impl DataBase {
         }
     }
 
+    /// Gets a connection to the database using the connection information stored in this `DataBase`.
     fn get_conn(&self) -> mysql::Conn {
         let url = format!(
             "mysql://{}:{}@{}:{}/{}",
@@ -75,6 +91,9 @@ impl DataBase {
         Conn::new(url).unwrap()
     }
 
+    /// Tests the connection to the database by sending a "ping" query.
+    ///
+    /// Returns `true` if the ping was successful, or `false` if it failed.
     pub fn ping(&self) -> bool {
         let result = self.execute(
             &SQL::Select(QDL(format!("SELECT 1"))), 
@@ -91,12 +110,20 @@ impl DataBase {
         }
     }
 
-    pub fn execute<E, F>(&self, command: &SQL, row_map: F ) -> Result<Vec<E>, Error> where F : FnMut(Result<Row, Error>) -> E{
+    /// Executes a given `SQL` command on the database and maps the rows returned by the query to a type `E` using the provided function `row_map`.
+    ///
+    /// # Arguments
+    /// 
+    /// * `cmd` - `SQL` command that will be executed
+    /// * `row_map` - `FnMut(Result<Row, Error>) -> E` is a function that maps a row to `E`
+    /// 
+    /// Returns a `Result` with an error of type `Error` if the query fails or there is a problem with the transaction.
+    pub fn execute<E, F>(&self, cmd: &SQL, row_map: F ) -> Result<Vec<E>, Error> where F : FnMut(Result<Row, Error>) -> E{
         let mut conn = self.get_conn();
 
         let mut tx = conn.start_transaction(TxOpts::default())?;
 
-        let statement = tx.prep(command.to_string())?;
+        let statement = tx.prep(cmd.to_string())?;
 
         let mut rows: Vec<E> = Vec::new();
 
@@ -122,6 +149,9 @@ impl DataBase {
         Ok(rows)
     }
 
+    /// Executes a list of `SQL` commands on the database as a single transaction.
+    ///
+    /// Returns a `Result` with an error of type `Error` if any of the queries fail or there is a problem with the transaction.
     pub fn execute_multiple(&self, commands: &Vec<SQL>) -> Result<(), Error> {
         let mut conn = self.get_conn();
 
@@ -142,26 +172,7 @@ impl DataBase {
         Ok(())
     }
 
-    fn execute_string(&self, commands: &Vec<&str>) -> Result<(), Error> {
-        let mut conn = self.get_conn();
-
-        let mut tx = conn.start_transaction(TxOpts::default())?;
-
-        for sql in commands{
-            let statement = tx.prep(sql.to_string())?;
-
-            if let Err(err) = tx.exec_iter(&statement, ()) {
-                //let _result = &tx.rollback();
-                return Err(err)
-            }
-            
-            let _result = tx.close(statement);
-        }
-
-        let _result = tx.commit();
-        Ok(())
-    }
-
+    /// Returns vector of `SQL` to recreate the current state of the database
     pub fn get_snapshot(&self) -> Vec<SQL> {
         let relations = Relation::get_relations().unwrap();
 
@@ -243,6 +254,7 @@ impl DataBase {
         cmds
     }
 
+    /// Returns Vector of `SQL` to delete all relations from database
     pub fn get_deletion_cmds(&self) -> Vec<SQL> {
         let relations = Relation::get_relations().unwrap();
 
@@ -259,10 +271,18 @@ impl DataBase {
             .collect()
     }
 
+    /// Deletes all relations from database
     pub fn delete_relations(&self) -> Result<(), Error> {
         self.execute_multiple(&self.get_deletion_cmds())
     }
 
+    /// Updates the state of database to what is defined in the `new_state` parameter
+    /// 
+    /// # Arguments
+    /// 
+    /// * `new_state` - Vector of `SQL` commands to generate new state of database
+    /// 
+    /// Returns Error if there is a failure to connect or a failure to execute a SQL command from `new_state`
     pub fn rollback(&self, new_state: Vec<SQL>)  -> Result<(), Error> {
         let rollback_cmds : Vec<SQL> = vec![
             self.get_deletion_cmds(),
