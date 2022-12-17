@@ -98,7 +98,7 @@ fn get_cmd(cmd: String, menu: &mut Menu) {
         static ref SCHEMA_TAB : Regex = Regex::new("[Ss][Hh][Oo][Ww] (.+)").unwrap();
     };
     lazy_static!{
-        static ref FROM_FILE : Regex = Regex::new("^--file:\\(([a-zA-Z][a-zA-Z0-9:/_]+.[Ss][Qq][Ll]) as ([S])\\)$").unwrap();
+        static ref FROM_FILE : Regex = Regex::new("^--file:\\(([a-zA-Z][a-zA-Z0-9:/\\\\_]+.[Ss][Qq][Ll]) as ([S])\\)$").unwrap();
     }
     if SCHEMA_TAB.is_match(&cmd) {
         let capture = SCHEMA_TAB.captures(&cmd).unwrap().get(1).unwrap().as_str();
