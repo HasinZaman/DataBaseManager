@@ -2,7 +2,7 @@ use std::{collections::HashMap, u8, cmp::max};
 
 use tui::{
     Frame,
-    style::{Color, Style},
+    style::{Color, Style, Modifier},
     widgets::{Table, Row, Cell, Block, Borders},
     backend::CrosstermBackend,
     layout::{Rect, Constraint}, text::{Spans, Span}
@@ -70,7 +70,8 @@ impl RelationListPage {
             let spans: Spans = Spans::from({
                 let spans_vec: Vec<Span> = {
                     let mut spans_vec: Vec<Span> = Vec::new();
-                    table.attributes.iter()
+                    table.attributes
+                        .iter()
                         .enumerate()
                         .map(
                             |(index,a)| {
@@ -139,9 +140,8 @@ impl RelationListPage {
     fn get_primary_key(&self, primary_key: usize, index: usize, table: &table::Table, a: &table::Attribute) -> Style {
         if primary_key == index {
             Style::default()
-            .fg(Color::Black)
-            .bg(
-            self.col_map
+            .fg(
+                self.col_map
                 .get(
                     &(
                         table.name.clone(),
@@ -151,6 +151,8 @@ impl RelationListPage {
                 .unwrap()
                 .clone()
             )
+            .bg(Color::Black)
+            .add_modifier(Modifier::BOLD)
         }
         else {
             Style::default()
