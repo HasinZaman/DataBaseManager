@@ -29,7 +29,7 @@ pub type DependencyTree = Graph<NodeIndex, NodeIndex, Directed>;
 ///             attributes: vec![
 ///                 Attribute{
 ///                     name: String::from("attr_1"),
-///                     data_type: AttributeType::Text(10),
+///                     data_type: AttributeType::Text,
 ///                     constraint: HashSet::new()
 ///                 }
 ///             ],
@@ -42,7 +42,7 @@ pub type DependencyTree = Graph<NodeIndex, NodeIndex, Directed>;
 ///             attributes: vec![
 ///                 Attribute{
 ///                     name: String::from("attr_2"),
-///                     data_type: AttributeType::Text(10),
+///                     data_type: AttributeType::Text,
 ///                     constraint: HashSet::from([
 ///                             Constraint::ForeignKey{
 ///                                 table_name: String::from("table_1"),
@@ -240,7 +240,7 @@ fn add_table_edges(table: &Table, edges: &mut Vec<(usize, usize)>, index: usize,
 ///             attributes: vec![
 ///                 Attribute{
 ///                     name: String::from("attr_1"),
-///                     data_type: AttributeType::Text(10),
+///                     data_type: AttributeType::Text,
 ///                     constraint: HashSet::new()
 ///                 }
 ///             ],
@@ -253,7 +253,7 @@ fn add_table_edges(table: &Table, edges: &mut Vec<(usize, usize)>, index: usize,
 ///             attributes: vec![
 ///                 Attribute{
 ///                     name: String::from("attr_2"),
-///                     data_type: AttributeType::Text(10),
+///                     data_type: AttributeType::Text,
 ///                     constraint: HashSet::from([
 ///                             Constraint::ForeignKey{
 ///                                 table_name: String::from("table_1"),
@@ -424,14 +424,14 @@ mod tests{
         [] => {
             Attribute{
                 name: String::from("attr_1"),
-                data_type: AttributeType::Text(10),
+                data_type: AttributeType::Text,
                 constraint: HashSet::new()
             }
         };
         [$table_name:literal] => {
             Attribute{
                 name: String::from("attr_2"),
-                data_type: AttributeType::Text(10),
+                data_type: AttributeType::Text,
                 constraint: HashSet::from(
                     [
                         Constraint::ForeignKey{

@@ -1,6 +1,7 @@
 use std::{fmt::{self, Display}, collections::{HashSet, HashMap}};
 use core::hash::Hash;
 
+use log::info;
 use mysql::{Row};
 use regex::Regex;
 
@@ -46,7 +47,7 @@ impl Table {
                     |row| {
                         match row {
                             Ok(column) => {
-                                
+                                info!("load row:{:?}", column);
                                 let primary_key_str: String = column.get(4).unwrap();
 
                                 (Attribute::from_row(column, table_name), &primary_key_str == "PRI")
@@ -364,10 +365,10 @@ pub struct Attribute{
 
 impl Attribute {
     fn from_row(row: Row, table_name: &str) -> Option<Attribute> {
-        //println!("{:?}", row);
-
         let name: String = row.get(0).unwrap();
         let data_type: String = row.get(1).unwrap();
+
+        info!("name:{}\tdata_type:{}", name, data_type);
 
         let data_type = match AttributeType::from(&data_type.to_ascii_uppercase()) {
             Some(val) => val,
@@ -517,7 +518,7 @@ pub enum AttributeType{
     VarBinary(u16),
     TinyBlob,
     TinyText,
-    Text(u16),
+    Text,
     Blob(u16),
     MediumText,
     MediumBlob,
@@ -600,7 +601,7 @@ impl AttributeType {
         regex_check!(r"VARBINARY\((\d+)\)", raw_str, VarBinary, u16);
         regex_check!(r"TINYBLOB", raw_str, TinyBlob);
         regex_check!(r"TINYTEXT", raw_str, TinyText);
-        regex_check!(r"TEXT\((\d+)\)", raw_str, Text, u16);
+        regex_check!(r"TEXT", raw_str, Text);
         regex_check!(r"BLOB\((\d+)\)", raw_str, Blob, u16);
         regex_check!(r"MEDIUMTEXT", raw_str, MediumText);
         regex_check!(r"LONGTEXT", raw_str, LongText);
@@ -640,7 +641,7 @@ impl fmt::Display for AttributeType{
             AttributeType::VarBinary(val) => write!(f, "varbinary({})", val),
             AttributeType::TinyBlob => write!(f, "tinyblob"),
             AttributeType::TinyText => write!(f, "tinytext"),
-            AttributeType::Text(val) => write!(f, "text({})", val),
+            AttributeType::Text => write!(f, "text"),
             AttributeType::Blob(val) => write!(f, "blob({})", val),
             AttributeType::MediumText => write!(f, "mediumtext"),
             AttributeType::MediumBlob => write!(f, "mediumblob"),
@@ -688,7 +689,7 @@ mod tests {
             attributes: vec![
                 Attribute{
                     name: String::from("attr_1"),
-                    data_type: AttributeType::Text(10),
+                    data_type: AttributeType::Text,
                     constraint: HashSet::from(
                         [
                             Constraint::NotNull,
@@ -700,7 +701,7 @@ mod tests {
             primary_key: Some(0),
         };
 
-        assert_eq!(*table.create(), "CREATE TABLE table_1 (attr_1 text(10) Unique Not Null, PRIMARY KEY(attr_1))")
+        assert_eq!(*table.create(), "CREATE TABLE table_1 (attr_1 text Unique Not Null, PRIMARY KEY(attr_1))")
     }
 
     #[test]
@@ -710,14 +711,14 @@ mod tests {
             attributes: vec![
                 Attribute{
                     name: String::from("attr_1"),
-                    data_type: AttributeType::Text(10),
+                    data_type: AttributeType::Text,
                     constraint: HashSet::new()
                 }
             ],
             primary_key: Some(0),
         };
 
-        assert_eq!(*table.create(), "CREATE TABLE table_1 (attr_1 text(10), PRIMARY KEY(attr_1))")
+        assert_eq!(*table.create(), "CREATE TABLE table_1 (attr_1 text, PRIMARY KEY(attr_1))")
     }
 
     //do more tests
