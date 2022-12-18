@@ -3,7 +3,7 @@ use std::{fs::File, io::{Read, Error}};
 use regex::{Regex, Captures};
 use lazy_static::lazy_static;
 
-/// Replaces occurrences of the pattern "--file:([file_path] as [read_type])" in `cmd`
+/// Replaces occurrences of the pattern "#file:([file_path] as [read_type])" in `cmd`
 /// with the contents of the specified file.
 ///
 /// The file path must contain only alphabetical, numeric, forward-slash (/), and underscore (_)
@@ -22,15 +22,15 @@ use lazy_static::lazy_static;
 /// let mut file = File::create(file_path)?;
 /// file.write_all(file_contents.as_bytes())?;
 ///
-/// let cmd = format!("--file:({} as S)", file_path);
+/// let cmd = format!("#file:({} as S)", file_path);
 /// let contents = contents(&cmd)?;
 ///
 /// assert_eq!(contents, file_contents);
 /// ```
 pub fn contents(cmd: &str) -> Result<String, Error> {
     lazy_static! {
-        /// Regular expression for matching the pattern "--file:([file_path] as [read_type])".
-        static ref FILE_INPUT_REGEX: Regex = Regex::new("--file:\\(([a-zA-Z][a-zA-Z0-9:/\\\\_]+.[a-zA-Z]+) as ([BS])\\)").unwrap();
+        /// Regular expression for matching the pattern "#file:([file_path] as [read_type])".
+        static ref FILE_INPUT_REGEX: Regex = Regex::new("#file:\\(([a-zA-Z][a-zA-Z0-9:/\\\\_ ]+.[a-zA-Z]+) as ([BS])\\)").unwrap();
     };
 
     let mut cmd = cmd.to_string();

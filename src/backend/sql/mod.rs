@@ -318,6 +318,98 @@ pub enum SQLLanguage{
     DCL
 }
 
+enum ParseMode{
+    Regular,
+    Comment,
+    String(char),
+}
+
+impl ParseMode {
+    pub fn parse(self, buffer: &mut Vec<char>, cmds: &mut Vec<SQL>, ch: char) -> Self {
+        match self{
+            ParseMode::Regular => self.regular_parse(buffer, cmds, ch),
+            ParseMode::Comment => self.comment_parse(ch),
+            ParseMode::String(_) => self.string_parse(buffer, ch),
+        }
+    }
+
+    fn regular_parse(self, buffer: &mut Vec<char>, cmds: &mut Vec<SQL>, ch: char) -> Self{
+        match ch {
+            //new string
+            '\"' |
+            '\'' |
+            '`'  => {
+                buffer.push(ch);
+                ParseMode::String(ch)
+            },
+            //comment check
+            '-' => {
+                match buffer.last() {
+                    Some('-') => {
+                        buffer.pop();
+                        ParseMode::Comment
+                    },
+                    None | Some(_) => {
+                        buffer.push(ch);
+                        self
+                    }
+                }
+            },
+            //end of line
+            ';' => {
+                match SQL::new(&buffer.drain(..).collect::<String>()) {
+                    Ok(val) => cmds.push(val),
+                    Err(err) => log::error!("Error - {:?}", err),
+                }
+                self
+            },
+            //new line
+            '\r' |
+            '\t' |
+            '\n' |
+            ' ' => {
+                match buffer.last() {
+                    Some(' ') |
+                    None => self,
+                    Some(_) => {
+                        buffer.push(' ');
+                        self
+                    },
+                }
+            }
+            //regular char
+            _=> {
+                buffer.push(ch);
+                self
+            }
+        }
+    }
+
+    fn comment_parse(self, ch: char) -> Self{
+        match ch {
+            '\n' => ParseMode::Regular,
+            _=> self
+        }
+    }
+
+    fn string_parse(self, buffer: &mut Vec<char>, ch: char) -> Self {
+        match self {
+            ParseMode::String(end_cond) => {
+                buffer.push(ch);
+
+                if ch == end_cond {
+                    return ParseMode::Regular
+                }
+                self
+            },
+            _=> {
+                panic!()
+            }
+        }
+    }
+}
+
+
 macro_rules! SQL_Parse {
     ($output_variant: ident, $language: ident, $regex_expr: literal, $sql_cmd: expr) => {
         {
@@ -475,6 +567,7 @@ impl SQL {
         }
     }
 
+
     /// Returns vector of SQL from a file.
     /// 
     /// # Arguments
@@ -520,28 +613,24 @@ impl SQL {
         const BUFFER_SIZE: usize = 100;
 
         let mut buffer = [0; BUFFER_SIZE];
-        let mut cmd : String = String::from("");
+        let mut parse_mode = ParseMode::Regular;
+
+        let mut cmd : Vec<char> = Vec::new();
 
         let mut results: Vec<SQL> = Vec::new();
         
         loop {
             match file.read(&mut buffer) {
-                Ok(0) => break,
-                Ok(n) => {
-
-                    let buffer_iter = buffer[..n].iter();
-
-                    for c in buffer_iter {
-                        let c = *c as char;
-
-                        cmd.push(c);
-
-                        if c == '\n' {
-                            if let Err(err) = SQL::extract_cmd(&mut cmd, &mut results) {
-                            }
-                        }
+                Ok(0) => {
+                    match SQL::new(&cmd.clone().into_iter().collect::<String>()) {
+                        Ok(val) => results.push(val),
+                        Err(err) => log::error!("Error - {:?}", err),
                     }
-                    if let Err(err) = SQL::extract_cmd(&mut cmd, &mut results) {
+                    break;
+                },
+                Ok(n) => {
+                    for ch in buffer[..n].iter() {
+                        parse_mode = parse_mode.parse(&mut cmd, &mut results, *ch as char);
                     }
                 }
                 Err(err) => {
@@ -550,39 +639,6 @@ impl SQL {
             }
         }
         Ok(results)
-    }
-
-    fn extract_cmd(query_cmd: &mut String, results: &mut Vec<SQL>) -> Result<(), SQLError>  {
-        //remove all comments
-        lazy_static! {
-            static ref COMMENT_CHECK_REGEX: Regex = Regex::new("--.*\n$").unwrap();
-        };
-        *query_cmd = COMMENT_CHECK_REGEX.replace_all(&*query_cmd, "").to_string();
-
-        //check if just bunch of \n
-        lazy_static! {
-            static ref CMD_TRIM_REGEX: Regex = Regex::new("^[\r\n\t ]+").unwrap();
-        };
-        *query_cmd = CMD_TRIM_REGEX.replace_all(&*query_cmd, "").to_string();
-
-        //check if command ends
-        lazy_static! {
-            static ref CMD_END_CHECK_REGEX: Regex = Regex::new(";\r?\n?$").unwrap();
-        };
-
-        if CMD_END_CHECK_REGEX.is_match(query_cmd) {
-            let query_cmd_tmp = CMD_END_CHECK_REGEX.replace(query_cmd, "");
-            
-            match SQL::new(&query_cmd_tmp.to_string()) {
-                Ok(val) => {
-                    results.push(val);
-                    query_cmd.clear();
-                    return Ok(())
-                },
-                Err(err) => return Err(err)
-            }
-        }
-        return Err(SQLError::Err(String::from("Failed to parse")))
     }
 
     /// Saves a vector of SQL commands into a file
@@ -661,6 +717,11 @@ mod tests{
     #[allow(unused_imports)]
     use super::*;
 
+    #[allow(unused_imports)]
+    use indoc::formatdoc;
+    #[allow(unused_imports)]
+    use indoc::indoc;
+
     //extracting commands from file
     #[test]
     fn file_parsing_multi_line_cmd() {
@@ -683,7 +744,7 @@ mod tests{
 
         let actual = SQL::from_file(file_name);
         let expected = vec![
-            SQL::new("CREATE TABLE tag (id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id))").unwrap(),
+            SQL::new("CREATE TABLE tag ( id INT AUTO_INCREMENT, colour CHAR(6), symbol VARCHAR(50) NOT NULL UNIQUE, tag_type INT NOT NULL, PRIMARY KEY(id) )").unwrap(),
             SQL::new("SELECT \"\n\t\t\n\t\t\"").unwrap(),
         ];
         assert_eq!(
@@ -729,7 +790,7 @@ mod tests{
         let _file_1 = FileEnv::new(
             file_name_1,
             &format!(
-                "INSERT INTO tag (colour, symbol, tag_type) VALUES (\"--file:({} as S)\", \"Web\", 2);",
+                "INSERT INTO tag (colour, symbol, tag_type) VALUES (\"#file:({} as S)\", \"Web\", 2);",
                 file_name_2
             )
         );
@@ -749,12 +810,79 @@ mod tests{
             expected
         );
 
-        let actual = SQL::new(&format!("--file:({} as S)", file_name_1));
+        let actual = SQL::new(&format!("#file:({} as S)", file_name_1));
         let expected = SQL::new("INSERT INTO tag (colour, symbol, tag_type) VALUES (\"ffffff\", \"Web\", 2);").unwrap();
         assert_eq!(
             actual.unwrap(),
             expected
         );
+    }
+
+    #[test]
+    fn file_insertion_2() {
+        let file_name_1 = "file_insertion_2_1.sql";
+        let file_name_2 = "content_1.md";
+        let file_name_3 = "content_2.md";
+
+        let _file_1 = FileEnv::new(
+            file_name_1,
+            &formatdoc! {
+                "
+                --create project & dev log
+                CREATE TABLE project (proj_tag INT, repo TINYTEXT NOT NULL, first_push DATE NOT NULL, last_push DATE, Foreign KEY(proj_tag) REFERENCES tag(id));
+                CREATE TABLE dev_log (tag_id INT, created TIMESTAMP, body TEXT NOT NULL, Foreign KEY(tag_id) REFERENCES tag(id));
+                
+                --update symbol => tag_name & tag_name can be null and doesn't have to be unique
+                ALTER TABLE tag ADD COLUMN tag_name VARCHAR(100);
+                UPDATE tag SET tag_name=tag.symbol;
+                ALTER TABLE tag DROP COLUMN symbol;
+                
+                INSERT INTO project (proj_tag, repo, first_push) VALUES (30, \"link\", '2022-2-01');
+                INSERT INTO tag (colour, tag_name, tag_type) VALUES (\"ffffff\", \"proj_name\", 3);
+                INSERT INTO dev_log (tag_id, body) VALUES ((SELECT COUNT(*) FROM tag LIMIT 1), \"#file:({} as S)\");
+                
+                INSERT INTO project (proj_tag, repo, first_push) VALUES (30, \"link\", '2022-2-01');
+                INSERT INTO tag (colour, tag_name, tag_type) VALUES (\"ffffff\", \"proj_name\", 3);
+                INSERT INTO dev_log (tag_id, body) VALUES ((SELECT COUNT(*) FROM tag LIMIT 1), \"#file:({} as S)\");
+                ",
+                file_name_2,
+                file_name_3
+            }
+        );
+
+        let _file_2 = FileEnv::new(
+            file_name_2,
+            &format!("One line of content")
+        );
+        let _file_3 = FileEnv::new(
+            file_name_3,
+            &format!("There are two lines of content.\nI am the second line.")
+        );
+
+        let expected = vec![
+            SQL::new("CREATE TABLE project (proj_tag INT, repo TINYTEXT NOT NULL, first_push DATE NOT NULL, last_push DATE, Foreign KEY(proj_tag) REFERENCES tag(id))").unwrap(),
+            SQL::new("CREATE TABLE dev_log (tag_id INT, created TIMESTAMP, body TEXT NOT NULL, Foreign KEY(tag_id) REFERENCES tag(id))").unwrap(),
+            SQL::new("ALTER TABLE tag ADD COLUMN tag_name VARCHAR(100)").unwrap(),
+            SQL::new("UPDATE tag SET tag_name=tag.symbol").unwrap(),
+            SQL::new("ALTER TABLE tag DROP COLUMN symbol").unwrap(),
+            SQL::new("INSERT INTO project (proj_tag, repo, first_push) VALUES (30, \"link\", '2022-2-01')").unwrap(),
+            SQL::new("INSERT INTO tag (colour, tag_name, tag_type) VALUES (\"ffffff\", \"proj_name\", 3)").unwrap(),
+            SQL::new(&format!("INSERT INTO dev_log (tag_id, body) VALUES ((SELECT COUNT(*) FROM tag LIMIT 1), \"{}\")", "One line of content")).unwrap(),
+            SQL::new("INSERT INTO project (proj_tag, repo, first_push) VALUES (30, \"link\", '2022-2-01')").unwrap(),
+            SQL::new("INSERT INTO tag (colour, tag_name, tag_type) VALUES (\"ffffff\", \"proj_name\", 3)").unwrap(),
+            SQL::new(&format!("INSERT INTO dev_log (tag_id, body) VALUES ((SELECT COUNT(*) FROM tag LIMIT 1), \"{}\")", "There are two lines of content.\nI am the second line.")).unwrap(),
+        ];
+        
+        let actual = SQL::from_file(file_name_1).unwrap();
+
+        actual.iter()
+            .zip(expected.iter())
+            .for_each(|(actual, expected)| {
+                assert_eq!(
+                    actual,
+                    expected
+                );
+            })
     }
 
 

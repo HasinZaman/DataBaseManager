@@ -162,22 +162,49 @@ impl DataBase {
     pub fn execute_multiple(&self, commands: &Vec<SQL>) -> Result<(), Error> {
         let mut conn = self.get_conn();
 
-        let mut tx = conn.start_transaction(TxOpts::default())?;
+        let mut tx = match conn.start_transaction(TxOpts::default()) {
+            Ok(tx) => tx,
+            Err(err) => {
+                log::error!("Failed to start transaction - Err:{:?}", err);
+                return Err(err);
+            },
+        };
+
+        let mut fail : Option<Error> = None;
 
         for sql in commands{
             let statement = tx.prep(sql.to_string())?;
-            
-            if let Err(err) = tx.exec_iter(&statement, ()) {
-                //let _result = &tx.rollback();
-                log::error!("Failed to execute command({}) - Err:{:?}", sql.to_string(), err);
-                return Err(err)
+
+            match tx.exec_iter(&statement, ()) {
+                Ok(result) => {
+                    //log::info!("Successfully cmd({}) - {:?}", sql.to_string(), result)
+                },
+                Err(err) => {
+                    log::error!("Failed to execute command({}) - Err:{:?}", sql.to_string(), err);
+                    fail = Some(err);
+                    break;
+                },
             }
             
-            let _result = tx.close(statement);
+            if let Err(err) = tx.close(statement) { 
+                log::error!("Failed to close command({}) - Err:{:?}", sql.to_string(), err);
+                fail = Some(err);
+                break;
+            }
+        }
+        
+        match fail{
+            Some(err) => {
+                let _result = tx.rollback();
+                return Err(err);
+            },
+            None => {
+                
+                let _result = tx.commit();
+                return Ok(());
+            },
         }
 
-        let _result = tx.commit();
-        Ok(())
     }
 
     /// Returns vector of `SQL` to recreate the current state of the database
