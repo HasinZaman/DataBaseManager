@@ -123,33 +123,51 @@ impl DataBase {
 
         let mut tx = conn.start_transaction(TxOpts::default())?;
 
-        let statement = tx.prep(cmd.to_string());
-
-        if let Err(err) = statement {
-            log::error!("{:?}", err);
-            return Err(err);
-        }
-
-        let statement = statement.unwrap();
-
         let mut rows: Vec<E> = Vec::new();
 
-        let execute: Option<Error> = {
-            let execute = tx.exec_iter(&statement, ());
+        let execute: Option<Error>;
 
-            match execute {
-                Ok(iter) => {
-                    rows = iter.map(row_map).collect();
-                    None
-                },
-                Err(err) => Some(err),
+        if let SQL::Select(QDL(cmd)) = cmd {
+            execute = {
+                let execute = tx.query_iter(cmd);
+                match execute {
+                    Ok(iter) => {
+                        rows = iter.map(row_map).collect();
+                        None
+                    },
+                    Err(err) => Some(err),
+                }
             }
-        };
+        }
+        else {
+            let statement = tx.prep(cmd.to_string());
+
+            if let Err(err) = statement {
+                log::error!("{:?}", err);
+                return Err(err);
+            }
+
+            let statement = statement.unwrap();
+
+            execute = {
+                let execute = tx.exec_iter(&statement, ());
+
+                match execute {
+                    Ok(iter) => {
+                        rows = iter.map(row_map).collect();
+                        None
+                    },
+                    Err(err) => Some(err),
+                }
+            };
+        }
 
         if let Some(err) = execute {
             let _result = tx.rollback();
             return Err(err);
         }
+
+        
 
         let _result = tx.commit();
         
