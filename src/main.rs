@@ -39,13 +39,13 @@ lazy_static!(
 static mut PAGE_SIZE: u16 = 0;
 
 fn main() {
-    let logfile = FileAppender::builder()
+    let log_file = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
         .build(".log")
         .unwrap();
     
     let config = Config::builder()
-        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .appender(Appender::builder().build("logfile", Box::new(log_file)))
         .build(
             Root::builder()
                 .appender("logfile")
