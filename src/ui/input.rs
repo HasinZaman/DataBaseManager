@@ -3,7 +3,9 @@ use std::{fmt::{self, Debug}, cmp::min};
 use tui::{widgets::{Block, Borders, Paragraph}, text::Spans};
 use crossterm::event::{KeyEvent, KeyCode, KeyEventKind};
 
-use super::renderable::Renderable;
+use super::{renderable::Renderable, cmd_stack::CmdStack};
+
+const STACK_SIZE: usize = 10;
 
 /// InputErr defines all the possible error from the Input widget
 #[derive(Debug)]
@@ -18,6 +20,7 @@ pub struct Input{
     pub prompt: Option<String>,
     cursor: usize,
     pub input_cond: bool,
+    cmd_stack: CmdStack<STACK_SIZE>,
 }
 
 impl Input {
@@ -34,6 +37,7 @@ impl Input {
                 content: content,
                 prompt: prompt,
                 input_cond: input_cond,
+                cmd_stack: CmdStack::default()
             }
         )
     }
@@ -45,6 +49,7 @@ impl Input {
             prompt: prompt,
             cursor: content.len(),
             input_cond: input_cond,
+            cmd_stack: CmdStack::default()
         }
     }
 
@@ -109,9 +114,11 @@ impl Input {
                 self.del_char();
             },
             KeyEvent{code: KeyCode::Enter, kind: KeyEventKind::Press, ..} => {
-                let str: String = self.content.iter().collect();
+                let cmd: String = self.content.iter().collect();
                 self.clear();
-                return Some(str)
+                self.cmd_stack.push(cmd.clone());
+                self.prompt = Some(format!("Previous: {}", &cmd));
+                return Some(cmd)
             },
             KeyEvent{code: KeyCode::Left, kind: KeyEventKind::Press, ..} => {
                 self.cursor_left(1);
@@ -122,6 +129,45 @@ impl Input {
             KeyEvent{code: KeyCode::Delete, kind: KeyEventKind::Press, ..} => {
                 if self.cursor < self.content.len() {
                     self.cursor_right(1).del_char();
+                }
+            },
+            KeyEvent{code: KeyCode::Up, kind: KeyEventKind::Press, ..} => {
+                if let Some(cmd) = self.cmd_stack.next() {
+                    self.prompt = {
+                        match self.cmd_stack.peek_prev() {
+                            Some(cmd) => Some(format!("Previous: {}", &cmd)),
+                            None => None,
+                        }
+                    };
+
+                    if self.cmd_stack.at_end() {
+                        self.cmd_stack.pop();
+                    }
+
+                    self.clear();
+                    for c in cmd.chars() {
+                        self.add_char(c);
+                    }
+                }
+            },
+            KeyEvent{code: KeyCode::Down, kind: KeyEventKind::Press, ..} => {
+                if self.cmd_stack.at_end() {
+                    let cmd: String = self.content.iter().collect();
+                    self.cmd_stack.push(cmd);
+                }
+
+                if let Some(cmd) = self.cmd_stack.next_back() {
+                    self.prompt = {
+                        match self.cmd_stack.peek_prev() {
+                            Some(cmd) => Some(format!("Previous: {}", &cmd)),
+                            None => None,
+                        }
+                    };
+                    
+                    self.clear();
+                    for c in cmd.chars() {
+                        self.add_char(c);
+                    }
                 }
             },
             // KeyEvent{code: KeyCode::F(u8), kind: KeyEventKind::Press, ..} => {
@@ -216,6 +262,7 @@ mod tests{
                 prompt: None,
                 cursor: 0,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             });
 
         assert_eq!(
@@ -232,6 +279,7 @@ mod tests{
                 prompt: None,
                 cursor: 0,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             });
 
         assert_eq!(
@@ -248,6 +296,7 @@ mod tests{
                 prompt: None,
                 cursor: 2,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             });
 
         assert_eq!(
@@ -264,6 +313,7 @@ mod tests{
                 prompt: None,
                 cursor: 3,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             });
 
         assert_eq!(
@@ -280,6 +330,7 @@ mod tests{
                 prompt: Some(String::from("prompt")),
                 cursor: 3,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             });
 
         assert_eq!(
@@ -307,6 +358,7 @@ mod tests{
             prompt: None,
             cursor: 3,
             input_cond: true,
+            cmd_stack: CmdStack::default()
         };
 
         assert_eq!(
@@ -323,6 +375,7 @@ mod tests{
             prompt: Some(String::from("prompt")),
             cursor: 3,
             input_cond: true,
+            cmd_stack: CmdStack::default()
         };
 
         assert_eq!(
@@ -339,6 +392,7 @@ mod tests{
             prompt: Some(String::from("prompt")),
             cursor: 0,
             input_cond: true,
+            cmd_stack: CmdStack::default()
         };
 
         assert_eq!(
@@ -355,6 +409,7 @@ mod tests{
                 prompt: None,
                 cursor: 0,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             };
 
         assert_eq!(
@@ -371,6 +426,7 @@ mod tests{
                 prompt: None,
                 cursor: 0,
                 input_cond: true,
+                cmd_stack: CmdStack::default()
             };
 
         assert_eq!(
@@ -387,6 +443,7 @@ mod tests{
                 prompt: None,
                 cursor: 0,
                 input_cond: false,
+                cmd_stack: CmdStack::default()
             };
 
         assert_eq!(
@@ -452,7 +509,8 @@ mod tests{
                 content: vec![],
                 prompt: None,
                 cursor: 0,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -464,7 +522,8 @@ mod tests{
                 content: vec!['a'],
                 prompt: None,
                 cursor: 1,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -476,7 +535,8 @@ mod tests{
                 content: vec!['a','a','a'],
                 prompt: None,
                 cursor: 3,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -490,7 +550,8 @@ mod tests{
                 content: vec!['a','a','b','a','a'],
                 prompt: None,
                 cursor: 3,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -505,7 +566,8 @@ mod tests{
                 content: vec!['d','c','a','a','b','a','a'],
                 prompt: None,
                 cursor: 1,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -518,7 +580,8 @@ mod tests{
                 content: vec!['d','c','a','a','b','a','a'],
                 prompt: None,
                 cursor: 1,
-                input_cond: false
+                input_cond: false,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -533,7 +596,8 @@ mod tests{
                 content: vec!['1','2','3','4','5','6'],
                 prompt: None,
                 cursor: 6,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -544,7 +608,8 @@ mod tests{
                 content: vec!['1','2','3','4','5'],
                 prompt: None,
                 cursor: 5,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -555,7 +620,8 @@ mod tests{
                 content: vec!['1','2','3','4'],
                 prompt: None,
                 cursor: 4,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -566,7 +632,8 @@ mod tests{
                 content: vec!['1','3','4'],
                 prompt: None,
                 cursor: 1,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -577,7 +644,8 @@ mod tests{
                 content: vec!['1','3','4'],
                 prompt: None,
                 cursor: 0,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -588,7 +656,8 @@ mod tests{
                 content: vec!['1','4'],
                 prompt: None,
                 cursor: 1,
-                input_cond: true
+                input_cond: true,
+                cmd_stack: CmdStack::default()
             },
             actual
         );
@@ -600,7 +669,8 @@ mod tests{
                 content: vec!['1','4'],
                 prompt: None,
                 cursor: 1,
-                input_cond: false
+                input_cond: false,
+                cmd_stack: CmdStack::default()
             },
             actual
         );

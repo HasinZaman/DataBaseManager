@@ -5,6 +5,7 @@ use tui::{Terminal, backend::CrosstermBackend};
 
 pub mod renderable;
 pub mod menu;
+mod cmd_stack;
 pub mod input;
 pub mod pages;
 
