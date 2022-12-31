@@ -194,7 +194,7 @@ impl DataBase {
             let statement = tx.prep(sql.to_string())?;
 
             match tx.exec_iter(&statement, ()) {
-                Ok(result) => {
+                Ok(_result) => {
                     //log::info!("Successfully cmd({}) - {:?}", sql.to_string(), result)
                 },
                 Err(err) => {
