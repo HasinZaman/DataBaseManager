@@ -1,130 +1,90 @@
 # Database Manager
+## Description
 
-## Purpose
+Database Manager is a rust, front-end, client-side application to quickly manage and view the state of a MySQL database. It was primarily developed to better manage the database behind HasinZaman.link.
 
-The Database Manager repo is an internal tool to better manage the state of projects, skills and dev-logs on [HasinZaman.link](http://hasinzaman.link).
+## Installation
 
-Before the creation of this tool - the database tool in use has become inefficient, slow process and increasingly obtuse to use. The main issues can be categorized into three groups:
+### 1. Download
 
- 1. Excessive Operations
+#### From Repository
 
-The current database tool requires a hard reset, followed by reconstructing the database from scratch - to update the database. This was quite useful during the early development of the database. As, the low tuple count and frequent schema updates - meant it was more convenient to do a hard reset and reconstruction. Compared to updating/editing/adding/deleting a limited number of tuples or updating tuples to abide by an updated schema.
+Download the repository on your system
 
-However, as the schema becomes more stable and the number of tuples in relations balloon. The current database tool is excessively slow and not scalable.
+Use `Cargo run` to run the source code or `cargo build` to build an executable
 
-Rather than fully destroying and reconstructing the database - the new database manager would add, edit, and delete tuples, without the full reconstruction of the database. The new database manager would only reconstruct the database from scratch when schemas are changed. Since the schema has become more stable - the need for hard resets has become increasingly rare.
+#### From Release
 
- 2. Hard to View Database State
+Download and unzip one of the releases
 
-The current database tool cannot view the state of the Database. As a result, it is required to use a slow online database tool(MyPHPAdmin) provided by the database provider. Since the current database is structured to be similar to a graph of tags. It is quite difficult to see the relationship between tags in a relational database. This is why the new database should provide a couple of viewing options to better conceptualize the database.
+### 2. Initialize Environmental Variables
 
-Firstly, the new tool should be able to easily show the relationship between schema. For instance, the colour highlighting of primary and foreign keys.
+The application requires certain environmental variables to be set to function.
 
-Secondly, the new tool should easily filter tags by type, name and relationships. For instance, this would be useful in conceptualizing the relationship between a project and skills; the link of dev-logs; or even the similarity of skills (ex. the relationship between Web-Dev & HTML, CSS, JS, TS, etc.).
+```
+DB_host : the host address of your database
+DB_port : the port your database is hosted on
+DB_name : the name of database
+DB_username : username of user on database
+DB_password : password of user on database
+```
 
- 3. Difficult to Execute Long and Single SQL Commands
+## Manual
 
-The Current database tool sends commands by reading each line of a text file - in which, each line is an SQL command. This has the advantage of storing numerous commands in sequence in a single file.
+### general
+ 
+The application can only be navigated through the commands inputted to the console.
 
-However, this input system breaks down as longer and more complicated commands. For instance, the implementation of a dev-log would require multi-line command parsing - as the alternative to putting entire dev-logs in one line. Not to mention, queries with sub-queries are easier to read and debug when formatted on multiple lines. This is why the new database tool needs to parse multi-line commands and long input attributes.
+ - All `letter`, `number` and `symbol` keys input characters into the console
+ - `Enter` key is used to execute commands
+ - `Down Arrow` key retrieves the previously executed command
+ - `Up Arrow` key retrieves the next most recently executed command or draft command
 
-This input system also is excessive for short SQL commands. For instance, an impromptu "SELECT * FROM Relation" call - takes too long to execute. As the command needs to be put in a text file, saved, then opened by the database tool and then executed. The process can be sped up - if the database tool can receive SQL commands in the command prompt on run time.
+### Schema Tab
 
-## UI
-| ![Database UI State Diagram](design_documentation//DB//new//DBM_State_Diagram.svg "Database UI State Diagram") |
-|:--:|
-| Fig.1.1 Database Manager UI State Diagram |
+The schema tab is used to see the architecture of the database
 
-### Schema UI Concept
-| ![Schema UI 1](design_documentation//UI//Schema_1.png) |
-|:--:|
-| Fig.1.2.1 Schema UI |
+Any of the following commands open's the Schema Tab
 
-| ![Schema UI 2](design_documentation//UI//Schema_2.png) |
-|:--:|
-| Fig.1.2.2 Schema UI |
+ - `show *` command is used to show the definition of every table and view the database
+ - `show views` command is used to show the definition of every view on the database
+ - `show tables` command is used to show the definition of every table on the database
+ - `show [table or view name]` command is used to show all the details relating to the definition of a specific table or view
 
-| ![Schema UI 3](design_documentation//UI//Schema_3.png) |
-|:--:|
-| Fig.1.2.3 Schema UI |
+Note: Font colour is used to refer primary key constraint, while highlighter colour is used to refer to foreign key constraint. The same font and highlight colour refer to a primary-foreign key relation.
 
-| ![Schema UI 4](design_documentation//UI//Schema_4.png) |
-|:--:|
-| Fig.1.2.4 Schema UI |
+### Query Tab
 
-| ![Schema UI 5](design_documentation//UI//Schema_5.png) |
-|:--:|
-| Fig.1.2.5 Schema UI |
+The query tab is used to see the state of tuples in views and tables in the database
 
-| ![Schema UI 6](design_documentation//UI//Schema_6.png) |
-|:--:|
-| Fig.1.2.6 Schema UI |
+Only valid `SELECT` SQL commands be used to open the Query Tab
 
-| ![Schema UI 7](design_documentation//UI//Schema_7.png) |
-|:--:|
-| Fig.1.2.7 Schema UI |
+- `SELECT ...` commands define which tuples are viewed
+- `next` command is used to get the next page of tuples
+- `prev` command is used to get the previous page of tuples
 
-| ![Schema UI 8](design_documentation//UI//Schema_8.png) |
-|:--:|
-| Fig.1.2.8 Schema UI |
+ex. Show all the tuples that exist in the natural join of two tables
 
-| ![Schema UI 9](design_documentation//UI//Schema_9.png) |
-|:--:|
-| Fig.1.2.9 Schema UI |
+```SQL
+SELECT * FROM table_1, table_2 WHERE table_1.id = table_2.id
+```
 
-### Relation UI Concept
-| ![Relation UI 1](design_documentation//UI//Relation_1.png) |
-|:--:|
-| Fig.1.3.1 Relation UI |
+ex. Show all tuples greater than 30
 
-| ![Relation UI 2](design_documentation//UI//Relation_2.png) |
-|:--:|
-| Fig.1.3.2 Relation UI |
+```SQL
+SELECT * FROM table_1 WHERE table_1.n > 30
+```
 
-| ![Relation UI 3](design_documentation//UI//Relation_3.png) |
-|:--:|
-| Fig.1.3.3 Relation UI |
+### Snapshot Tab
 
+The snapshot tab is used to add, remove or rollback the database to a given point in the database's history
 
-### Snapshot UI Concept
-| ![Snapshot UI 1](design_documentation//UI//SnapShot_1.png) |
-|:--:|
-| Fig.1.4.1 Snapshot UI |
+Only a `snapshot` command can open the Snapshot page
 
-| ![Snapshot UI 2](design_documentation//UI//SnapShot_2.png) |
-|:--:|
-| Fig.1.4.2 Snapshot UI |
+ - `snapshot` command opens the snapshot page
+ - `add` command adds a new snapshot from the current database
+ - `remove [row or name]` command removes the snapshot
+ - `rollback [row or name]` command is used to rollback the database to the specified snapshot
 
-| ![Snapshot UI 3](design_documentation//UI//SnapShot_3.png) |
-|:--:|
-| Fig.1.4.3 Snapshot UI |
-
-| ![Snapshot UI 4](design_documentation//UI//SnapShot_4.png) |
-|:--:|
-| Fig.1.4.4 Snapshot UI |
-
-| ![Snapshot UI 5](design_documentation//UI//SnapShot_5.png) |
-|:--:|
-| Fig.1.4.5 Snapshot UI |
-
-## Testing
-
-In order to better understand the capabilities of the new database manager tool. It will be tested in a couple of ways. Firstly, the the current schema will be updated to a newer schema using the new database manager. Secondly, new tuples would be added to each relation to using numerous different input methods (input attr from raw text from console, input attr from file from console, input command from file). Finally, tests will be done on the speed and usability of saving and resetting the database to a snapshot.
-
-### Current Database
-| ![Current Database Entity Diagram](design_documentation//DB//old//ER_Diagram.svg) |
-|:--:|
-| Fig.2.1 Current Database Entity Diagram |
-
-| ![Current Database Schema Diagram](design_documentation//DB//old//Schema_Diagram.svg) |
-|:--:|
-| Fig.2.2 Current Database Schema Diagram |
-
-### New Database
-| ![New Proposed Database Entity Diagram](design_documentation//DB//new//DB_Entity_Diagram.svg) |
-|:--:|
-| Fig.3.1 New Proposed Database Entity Diagram |
-
-| ![New Proposed Database Schema Diagram](design_documentation//DB//new//DB_Schema_Diagram.svg) |
-|:--:|
-| Fig.3.2 New Proposed Database Schema Diagram |
+## License
+Distributed under the MIT License. See `LICENSE.md` for more information.
