@@ -26,9 +26,9 @@ The application requires certain environmental variables to be set to function.
 ```
 DB_host : the host address of your database
 DB_port : the port your database is hosted on
-DB_name : the name of database
-DB_username : username of user on database
-DB_password : password of user on database
+DB_name : the name of the database
+DB_username : username of the user on the database
+DB_password : password of the user on the database
 ```
 
 ## Manual
@@ -53,13 +53,13 @@ Any of the following commands open's the Schema Tab
  - `show tables` command is used to show the definition of every table on the database
  - `show [table or view name]` command is used to show all the details relating to the definition of a specific table or view
 
-Note: Font colour is used to refer primary key constraint, while highlighter colour is used to refer to foreign key constraint. The same font and highlight colour refer to a primary-foreign key relation.
+Note: Font colour is used to refer to the primary key constraint, while highlighter colour is used to refer to the foreign key constraint. The same font and highlight colour refer to a primary-foreign key relation.
 
 ### Query Tab
 
 The query tab is used to see the state of tuples in views and tables in the database
 
-Only valid `SELECT` SQL commands be used to open the Query Tab
+Only valid `SELECT` SQL commands are used to open the Query Tab
 
 - `SELECT ...` commands define which tuples are viewed
 - `next` command is used to get the next page of tuples
