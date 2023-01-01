@@ -3,6 +3,8 @@
 
 Database Manager is a rust, front-end, client-side application to quickly manage and view the state of a MySQL database. It was primarily developed to better manage the database behind HasinZaman.link.
 
+More information about the project can be found at [hasinzaman.link/Database_Manager](hasinzaman.link/Database_Manager).
+
 ## Installation
 
 ### 1. Download
