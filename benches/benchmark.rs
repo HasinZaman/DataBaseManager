@@ -1,6 +1,6 @@
 use std::{time::Duration};
 
-use DataBaseManager::backend::{data_base::DataBase, sql::SQL};
+use mySQL_database_manager::backend::{data_base::DataBase, sql::SQL};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 
